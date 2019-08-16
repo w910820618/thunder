@@ -8,7 +8,7 @@ import (
 
 func main() {
 	/**
-	Get data from the command line
+	Get data from the command line   add ip port
 	*/
 	isServer := flag.Bool("s", false, "")
 	clientDest := flag.String("c", "", "")
