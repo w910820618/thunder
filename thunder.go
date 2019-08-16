@@ -3,17 +3,17 @@ package main
 import (
 	"flag"
 	"runtime"
-	"strings"
 	"time"
 )
 
 func main() {
+	/**
+	Get data from the command line
+	*/
 	isServer := flag.Bool("s", false, "")
 	clientDest := flag.String("c", "", "")
-	testTypePtr := flag.String("t", "", "")
 	thCount := flag.Int("n", 1, "")
 	bufLenStr := flag.String("l", "16KB", "")
-	protocol := flag.String("p", "tcp", "")
 	rttCount := flag.Int("i", 1000, "")
 	reverse := flag.Bool("r", false, "")
 	gap := flag.Duration("g", 0, "")
@@ -62,55 +62,16 @@ func main() {
 		*/
 	}
 
+	/**
+	Judge the type of test pps
+	*/
 	var testType EthrTestType
-	switch *testTypePtr {
-	case "":
-		switch mode {
-		case ethrModeServer:
-			testType = All
-		case ethrModeExtServer:
-			testType = All
-		case ethrModeClient:
-			testType = Bandwidth
-		case ethrModeExtClient:
-			testType = ConnLatency
-		}
-	case "b":
-		testType = Bandwidth
-	case "c":
-		testType = Cps
-	case "p":
-		testType = Pps
-	case "l":
-		testType = Latency
-	case "cl":
-		testType = ConnLatency
-	default:
-		/**
-		cmd.PrintUsageError(fmt.Sprintf("Invalid value \"%s\" specified for parameter \"-t\".\n"+
-			"Valid parameters and values are:\n", *testTypePtr))
-		*/
-	}
+	testType = Pps
 
-	p := strings.ToUpper(*protocol)
-	proto := TCP
-	switch p {
-	case "TCP":
-		proto = TCP
-	case "UDP":
-		proto = UDP
-	case "HTTP":
-		proto = HTTP
-	case "HTTPS":
-		proto = HTTPS
-	case "ICMP":
-		proto = ICMP
-	default:
-		/**
-		cmd.PrintUsageError(fmt.Sprintf("Invalid value \"%s\" specified for parameter \"-p\".\n"+
-			"Valid parameters and values are:\n", *protocol))
-		*/
-	}
+	/**
+	Judge the protocol of test UDP
+	*/
+	proto := UDP
 
 	if *thCount <= 0 {
 		*thCount = runtime.NumCPU()
@@ -164,44 +125,18 @@ func validateTestParam(mode ethrMode, testParam EthrTestParam) {
 			emitUnsupportedTest(testParam)
 		}
 	} else if mode == ethrModeClient {
-		switch protocol {
-		case TCP:
-			if testType != Bandwidth && testType != Cps && testType != Latency {
-				emitUnsupportedTest(testParam)
-			}
-			if testParam.Reverse && testType != Bandwidth {
-				printReverseModeError()
-			}
-		case UDP:
-			if testType != Bandwidth && testType != Pps {
-				emitUnsupportedTest(testParam)
-			}
-			if testType == Bandwidth {
-				if testParam.BufferSize > (64 * 1024) {
-					/**
-					cmd.PrintUsageError("Maximum supported buffer size for UDP is 64K\n")
-					*/
-				}
-			}
-			if testParam.Reverse {
-				printReverseModeError()
-			}
-		case HTTP:
-			if testType != Bandwidth && testType != Latency {
-				emitUnsupportedTest(testParam)
-			}
-			if testParam.Reverse {
-				printReverseModeError()
-			}
-		case HTTPS:
-			if testType != Bandwidth {
-				emitUnsupportedTest(testParam)
-			}
-			if testParam.Reverse {
-				printReverseModeError()
-			}
-		default:
+		if testType != Bandwidth && testType != Pps {
 			emitUnsupportedTest(testParam)
+		}
+		if testType == Bandwidth {
+			if testParam.BufferSize > (64 * 1024) {
+				/**
+				cmd.PrintUsageError("Maximum supported buffer size for UDP is 64K\n")
+				*/
+			}
+		}
+		if testParam.Reverse {
+			printReverseModeError()
 		}
 	} else if mode == ethrModeExtClient {
 		if (protocol != TCP) || (testType != ConnLatency && testType != Bandwidth) {
