@@ -162,28 +162,22 @@ const (
 // EthrTestID represents the test id.
 type EthrTestID struct {
 	// Protocol represents the protocol this test uses.
-	Protocol EthrProtocol
+	//Protocol EthrProtocol
 
 	// Type represents the test type this test uses.
-	Type EthrTestType
+	//Type EthrTestType
+
+	host string
+
+	port string
 }
 
 // EthrTestParam represents the parameters used for the test.
 type EthrTestParam struct {
 	// TestID represents the test id of this test.
 	TestID EthrTestID
-
-	// NumThreads represents how many threads are used for the test.
-	NumThreads uint32
-
 	// BufferSize represents the buffer size.
 	BufferSize uint32
-
-	// RttCount represents the rtt count.
-	RttCount uint32
-
-	// Reverse mode for bandwidth tests.
-	Reverse bool
 }
 
 type ethrMode uint32
@@ -195,3 +189,14 @@ const (
 	ethrModeClient
 	ethrModeExtClient
 )
+
+type thunderServerParam struct {
+	host string
+	port string
+}
+
+type thunderClientParam struct {
+	host   string
+	port   string
+	bufLen uint32
+}

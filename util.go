@@ -44,7 +44,7 @@ func generatePortNumbers(customPortString string) {
 		case "CONTROL":
 			ctrlBasePort = p
 		default:
-			ui.printErr("Ignoring unexpected key in custom ports: %s", k)
+			//ui.printErr("Ignoring unexpected key in custom ports: %s", k)
 		}
 	}
 	ctrlPort = toString(ctrlBasePort)
@@ -157,7 +157,7 @@ func toString(n int) string {
 func toInt(s string) int {
 	res, err := strconv.Atoi(s)
 	if err != nil {
-		ui.printDbg("Error in string conversion: %v", err)
+		//ui.printDbg("Error in string conversion: %v", err)
 		return 0
 	}
 	return res

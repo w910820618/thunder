@@ -14,7 +14,6 @@ func startStatsTimer() {
 		for statsEnabled {
 			select {
 			case <-ticker.C:
-				emitStats()
 			}
 		}
 		ticker.Stop()
