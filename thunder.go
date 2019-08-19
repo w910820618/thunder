@@ -28,14 +28,6 @@ func main() {
 	}
 
 	bufLen := unitToNumber(*bufLenStr)
-	//fmt.Printf("%v", bufLen)
-	//if bufLen == 0 {
-	//	fmt.Printf("Invalid length specified: %s" + *bufLenStr)
-	//	/**
-	//	cmd.PrintUsageError(fmt.Sprintf("Invalid length specified: %s" + *bufLenStr))
-	//	*/
-	//}
-	//testParam := EthrTestParam{EthrTestID{*hostStr, *portStr}, uint32(bufLen)}
 
 	thunderParam := ThunderParam{*hostStr, *portStr}
 	serverParam := EthrTestParam{thunderParam, uint32(bufLen), uint32(*thCount)}
