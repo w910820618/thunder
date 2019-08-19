@@ -9,6 +9,7 @@ func main() {
 	Get data from the command line   add ip port
 	*/
 	isServer := flag.Bool("s", false, "")
+	thCount := flag.Int("n", 1, "")
 	bufLenStr := flag.String("len", "", "")
 	hostStr := flag.String("hosts", "", "")
 	portStr := flag.String("ports", "", "")
@@ -36,8 +37,9 @@ func main() {
 	//}
 	//testParam := EthrTestParam{EthrTestID{*hostStr, *portStr}, uint32(bufLen)}
 
-	clientParam := thunderClientParam{*hostStr, *portStr, uint32(bufLen)}
-	serverParam := thunderServerParam{*hostStr, *portStr}
+	thunderParam := ThunderParam{*hostStr, *portStr}
+	serverParam := EthrTestParam{thunderParam, uint32(bufLen), uint32(*thCount)}
+	clientParam := EthrTestParam{thunderParam, uint32(bufLen), uint32(*thCount)}
 	switch mode {
 	case ethrModeServer:
 		runServer(serverParam)

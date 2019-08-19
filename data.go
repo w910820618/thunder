@@ -1,9 +1,6 @@
 package main
 
 import (
-	"container/list"
-	"encoding/gob"
-	"net"
 	"time"
 )
 
@@ -11,11 +8,11 @@ type ethrTestResult struct {
 	data uint64
 }
 
-type ethrSession struct {
-	remoteAddr string
-	testCount  uint32
-	tests      map[EthrTestID]*ethrTest
-}
+//type ethrSession struct {
+//	remoteAddr string
+//	testCount  uint32
+//	tests      map[EthrTestID]*ethrTest
+//}
 
 // EthrMsgSyn represents the Syn entity.
 type EthrMsgSyn struct {
@@ -97,20 +94,6 @@ type EthrMsg struct {
 	End *EthrMsgEnd
 }
 
-type ethrTest struct {
-	isActive   bool
-	session    *ethrSession
-	ctrlConn   net.Conn
-	refCount   int32
-	enc        *gob.Encoder
-	dec        *gob.Decoder
-	rcvdMsgs   chan *EthrMsg
-	testParam  EthrTestParam
-	testResult ethrTestResult
-	done       chan struct{}
-	connList   *list.List
-}
-
 type ethrClientParam struct {
 	duration time.Duration
 	gap      time.Duration
@@ -160,13 +143,7 @@ const (
 )
 
 // EthrTestID represents the test id.
-type EthrTestID struct {
-	// Protocol represents the protocol this test uses.
-	//Protocol EthrProtocol
-
-	// Type represents the test type this test uses.
-	//Type EthrTestType
-
+type ThunderParam struct {
 	host string
 
 	port string
@@ -175,9 +152,11 @@ type EthrTestID struct {
 // EthrTestParam represents the parameters used for the test.
 type EthrTestParam struct {
 	// TestID represents the test id of this test.
-	TestID EthrTestID
+	thunderParam ThunderParam
 	// BufferSize represents the buffer size.
 	BufferSize uint32
+
+	NumThreads uint32
 }
 
 type ethrMode uint32
@@ -189,14 +168,3 @@ const (
 	ethrModeClient
 	ethrModeExtClient
 )
-
-type thunderServerParam struct {
-	host string
-	port string
-}
-
-type thunderClientParam struct {
-	host   string
-	port   string
-	bufLen uint32
-}
