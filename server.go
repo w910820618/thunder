@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func runServer(serverParam EthrTestParam) {
-	addr, err := net.ResolveUDPAddr("udp", serverParam.thunderParam.host+":"+serverParam.thunderParam.port)
+func runServer(testParam EthrTestParam) {
+	addr, err := net.ResolveUDPAddr("udp", testParam.host+":"+testParam.port)
 	if err != nil {
 		fmt.Println("Can't resolve address: ", err)
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"time"
 )
 
 func main() {
@@ -10,6 +11,7 @@ func main() {
 	*/
 	isServer := flag.Bool("s", false, "")
 	thCount := flag.Int("n", 1, "")
+	duration := flag.Duration("d", 10*time.Second, "")
 	bufLenStr := flag.String("len", "", "")
 	hostStr := flag.String("hosts", "", "")
 	portStr := flag.String("ports", "", "")
@@ -29,13 +31,12 @@ func main() {
 
 	bufLen := unitToNumber(*bufLenStr)
 
-	thunderParam := ThunderParam{*hostStr, *portStr}
-	serverParam := EthrTestParam{thunderParam, uint32(bufLen), uint32(*thCount)}
-	clientParam := EthrTestParam{thunderParam, uint32(bufLen), uint32(*thCount)}
+	clientParam := ethrClientParam{*duration}
+	testParam := EthrTestParam{*hostStr, *portStr, uint32(bufLen), uint32(*thCount)}
 	switch mode {
 	case ethrModeServer:
-		runServer(serverParam)
+		runServer(testParam)
 	case ethrModeClient:
-		runClient(clientParam)
+		runClient(testParam, clientParam)
 	}
 }

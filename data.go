@@ -96,7 +96,6 @@ type EthrMsg struct {
 
 type ethrClientParam struct {
 	duration time.Duration
-	gap      time.Duration
 }
 
 // EthrTestType represents the test type.
@@ -142,18 +141,12 @@ const (
 	ICMP
 )
 
-// EthrTestID represents the test id.
-type ThunderParam struct {
+// EthrTestParam represents the parameters used for the test.
+type EthrTestParam struct {
 	host string
 
 	port string
-}
 
-// EthrTestParam represents the parameters used for the test.
-type EthrTestParam struct {
-	// TestID represents the test id of this test.
-	thunderParam ThunderParam
-	// BufferSize represents the buffer size.
 	BufferSize uint32
 
 	NumThreads uint32

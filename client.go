@@ -7,11 +7,26 @@ import (
 	"time"
 )
 
-func runClient(clientParam EthrTestParam) {
-	done := make(chan struct{})
-	for th := uint32(0); th < clientParam.NumThreads; th++ {
+const (
+	timeout = 0
+)
+
+func runDurationTimer(d time.Duration, toStop chan int) {
+	go func() {
+		dSeconds := uint64(d.Seconds())
+		if dSeconds == 0 {
+			return
+		}
+		time.Sleep(d)
+		toStop <- timeout
+	}()
+}
+
+func runClient(testParam EthrTestParam, clientParam ethrClientParam) {
+	startStatsTimer()
+	for th := uint32(0); th < testParam.NumThreads; th++ {
 		go func() {
-			addr, err := net.ResolveUDPAddr("udp", clientParam.thunderParam.host+":"+clientParam.thunderParam.port)
+			addr, err := net.ResolveUDPAddr("udp", testParam.host+":"+testParam.port)
 			if err != nil {
 				fmt.Println("Can't resolve address: ", err)
 			}
@@ -20,12 +35,11 @@ func runClient(clientParam EthrTestParam) {
 				fmt.Println("Can't dial: ", err)
 			}
 			defer conn.Close()
-			buff := make([]byte, clientParam.BufferSize)
+			buff := make([]byte, testParam.BufferSize)
 			_, err = conn.Write(buff)
 			for {
+
 				select {
-				case <-done:
-					break
 				default:
 					_, err := conn.Write(buff)
 					data := make([]byte, 4)
@@ -42,5 +56,12 @@ func runClient(clientParam EthrTestParam) {
 			}
 		}()
 	}
-	<-done
+	toStop := make(chan int, 1)
+	runDurationTimer(clientParam.duration, toStop)
+	stopStatsTimer()
+	reason := <-toStop
+	switch reason {
+	case timeout:
+		fmt.Println("Ethr done,duration: " + clientParam.duration.String() + ".")
+	}
 }
