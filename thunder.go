@@ -30,7 +30,7 @@ func main() {
 	}
 	bufLen := unitToNumber(*bufLenStr)
 	generatePortNumbers(*portStr)
-	testParam := ThunTestParam{ThunTestID{ThunProtocol(1), 4},
+	testParam := ThunTestParam{ThunTestID{ThunProtocol(UDP), Pps},
 		uint32(bufLen),
 		uint32(*thCount)}
 

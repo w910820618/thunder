@@ -67,7 +67,6 @@ func runUDPPpsTest(test *thunTest) {
 					if err != nil {
 						continue
 					}
-					fmt.Printf("-----------\n")
 					atomic.AddUint64(&test.testResult.data, 1)
 				}
 			}

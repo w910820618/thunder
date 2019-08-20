@@ -50,7 +50,7 @@ func runUDPPpsHandler(test *thunTest, conn *net.UDPConn) {
 			continue
 		}
 		server, port, _ := net.SplitHostPort(remoteAddr.String())
-		test := getTest(server, UDP, Pps)
+		test := getTest(hostAddr, UDP, Pps)
 		if test != nil {
 			atomic.AddUint64(&test.testResult.data, 1)
 		} else {
