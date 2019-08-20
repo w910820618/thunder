@@ -1,42 +1,60 @@
 package main
 
 import (
-	"encoding/binary"
 	"fmt"
 	"net"
 	"runtime"
-	"time"
+	"sync/atomic"
 )
 
-func runServer(testParam EthrTestParam) {
-	addr, err := net.ResolveUDPAddr("udp", testParam.host+":"+testParam.port)
+func runServer(testParam ThunTestParam) {
+	defer stopStatsTimer()
+	startStatsTimer()
+	test, err := newTest(hostAddr, testParam)
 	if err != nil {
-		fmt.Println("Can't resolve address: ", err)
+		return
 	}
-	conn, err := net.ListenUDP("udp", addr)
-	if err != nil {
-		fmt.Println("Error listening:", err)
-	}
-	done := make(chan struct{})
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go handleClient(conn)
-	}
-	<-done
+	runUDPPpsServer(test)
 }
 
-func handleClient(conn *net.UDPConn) {
-	for {
-		data := make([]byte, 1024)
-		n, remoteAddr, err := conn.ReadFromUDP(data)
-		if err != nil {
-			fmt.Println("failed to read UDP msg because of ", err.Error())
-			return
-		}
-		daytime := time.Now().Unix()
-		fmt.Println(n, remoteAddr)
-		b := make([]byte, 4)
-		binary.BigEndian.PutUint32(b, uint32(daytime))
-		conn.WriteToUDP(b, remoteAddr)
+func runUDPPpsServer(test *thunTest) error {
+	udpAddr, err := net.ResolveUDPAddr("udp", test.session.remoteAddr+":"+udpPpsPort)
+	if err != nil {
+		fmt.Println("Unable to resolve UDP address: %v", err)
+		return err
+	}
+	l, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		fmt.Printf("Error listening on %s for UDP pkt/s tests: %v", udpPpsPort, err)
+		return err
 	}
 
+	defer l.Close()
+	for {
+		for i := 0; i < runtime.NumCPU(); i++ {
+			go runUDPPpsHandler(test, l)
+		}
+		<-test.done
+	}
+
+	return nil
+}
+
+func runUDPPpsHandler(test *thunTest, conn *net.UDPConn) {
+	buffer := make([]byte, test.testParam.BufferSize)
+	_, remoteAddr, err := 0, new(net.UDPAddr), error(nil)
+	for err == nil {
+		_, remoteAddr, err = conn.ReadFromUDP(buffer)
+		if err != nil {
+			fmt.Printf("Error receiving data from UDP for pkt/s test: %v\n", err)
+			continue
+		}
+		server, port, _ := net.SplitHostPort(remoteAddr.String())
+		test := getTest(server, UDP, Pps)
+		if test != nil {
+			atomic.AddUint64(&test.testResult.data, 1)
+		} else {
+			fmt.Printf("Received unsolicited UDP traffic on port %s from %s port %s\n", udpPpsPort, server, port)
+		}
+	}
 }

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/binary"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 )
 
@@ -22,46 +22,55 @@ func runDurationTimer(d time.Duration, toStop chan int) {
 	}()
 }
 
-func runClient(testParam EthrTestParam, clientParam ethrClientParam) {
+func runClient(testParam ThunTestParam, clientParam thunClientParam, server string) {
+	test, err := establishSession(testParam, server)
+	if err != nil {
+		return
+	}
+	runTest(test, clientParam.duration)
+}
+
+func establishSession(testParam ThunTestParam, server string) (test *thunTest, err error) {
+	test, err = newTest(server, testParam)
+	return test, nil
+}
+
+func runTest(test *thunTest, d time.Duration) {
 	startStatsTimer()
-	for th := uint32(0); th < testParam.NumThreads; th++ {
+	go runUDPPpsTest(test)
+	test.isActive = true
+	toStop := make(chan int, 1)
+	runDurationTimer(d, toStop)
+	reason := <-toStop
+	close(test.done)
+	stopStatsTimer()
+	switch reason {
+	case timeout:
+		fmt.Printf("Ethr done, duration: " + d.String() + ".")
+	}
+}
+
+func runUDPPpsTest(test *thunTest) {
+	server := test.session.remoteAddr
+	for th := uint32(0); th < test.testParam.NumThreads; th++ {
 		go func() {
-			addr, err := net.ResolveUDPAddr("udp", testParam.host+":"+testParam.port)
-			if err != nil {
-				fmt.Println("Can't resolve address: ", err)
-			}
-			conn, err := net.DialUDP("udp", nil, addr)
+			conn, err := net.Dial("udp", server+":"+udpPpsPort)
 			if err != nil {
 				fmt.Println("Can't dial: ", err)
 			}
 			defer conn.Close()
-			buff := make([]byte, testParam.BufferSize)
-			_, err = conn.Write(buff)
+			buff := make([]byte, test.testParam.BufferSize)
 			for {
-
 				select {
 				default:
 					_, err := conn.Write(buff)
-					data := make([]byte, 4)
-					_, err = conn.Read(data)
-					if err != nil {
-						fmt.Println("failed to read UDP msg because of ", err)
-					}
-					t := binary.BigEndian.Uint32(data)
-					fmt.Println(time.Unix(int64(t), 0).String())
 					if err != nil {
 						continue
 					}
+					fmt.Printf("-----------\n")
+					atomic.AddUint64(&test.testResult.data, 1)
 				}
 			}
 		}()
-	}
-	toStop := make(chan int, 1)
-	runDurationTimer(clientParam.duration, toStop)
-	stopStatsTimer()
-	reason := <-toStop
-	switch reason {
-	case timeout:
-		fmt.Println("Ethr done,duration: " + clientParam.duration.String() + ".")
 	}
 }

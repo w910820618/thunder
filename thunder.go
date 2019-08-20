@@ -10,10 +10,10 @@ func main() {
 	Get data from the command line   add ip port
 	*/
 	isServer := flag.Bool("s", false, "")
+	clientDest := flag.String("c", "", "")
 	thCount := flag.Int("n", 1, "")
 	duration := flag.Duration("d", 10*time.Second, "")
 	bufLenStr := flag.String("len", "", "")
-	hostStr := flag.String("hosts", "", "")
 	portStr := flag.String("ports", "", "")
 	flag.Parse()
 
@@ -28,15 +28,20 @@ func main() {
 		mode = ethrModeClient
 
 	}
-
 	bufLen := unitToNumber(*bufLenStr)
+	generatePortNumbers(*portStr)
+	testParam := ThunTestParam{ThunTestID{ThunProtocol(1), 4},
+		uint32(bufLen),
+		uint32(*thCount)}
 
-	clientParam := ethrClientParam{*duration}
-	testParam := EthrTestParam{*hostStr, *portStr, uint32(bufLen), uint32(*thCount)}
+	clientParam := thunClientParam{*duration}
+
+	//clientParam := ethrClientParam{*duration}
+	//testParam := ThunTestParam{*hostStr, *portStr, uint32(bufLen), uint32(*thCount)}
 	switch mode {
 	case ethrModeServer:
 		runServer(testParam)
 	case ethrModeClient:
-		runClient(testParam, clientParam)
+		runClient(testParam, clientParam, *clientDest)
 	}
 }
