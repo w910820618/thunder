@@ -12,6 +12,7 @@ func main() {
 	isServer := flag.Bool("s", false, "")
 	clientDest := flag.String("c", "", "")
 	thCount := flag.Int("n", 1, "")
+	showUI := flag.Bool("ui", false, "")
 	duration := flag.Duration("d", 10*time.Second, "")
 	bufLenStr := flag.String("len", "", "")
 	portStr := flag.String("ports", "", "")
@@ -35,12 +36,13 @@ func main() {
 		uint32(*thCount)}
 
 	clientParam := thunClientParam{*duration}
+	serverParam := ethrServerParam{*showUI}
 
 	//clientParam := ethrClientParam{*duration}
 	//testParam := ThunTestParam{*hostStr, *portStr, uint32(bufLen), uint32(*thCount)}
 	switch mode {
 	case ethrModeServer:
-		runServer(testParam)
+		runServer(testParam, serverParam)
 	case ethrModeClient:
 		runClient(testParam, clientParam, *clientDest)
 	}

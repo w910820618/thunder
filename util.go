@@ -5,16 +5,21 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
+	"unicode/utf8"
 )
 
 var customPortRegex = regexp.MustCompile("(\\w+)=([0-9]+)")
 
 const hostAddr = ""
 
-var udpPpsPort string
+var udpPpsPort, ctrlPort string
+
+var ctrlBasePort = 8888
 
 func generatePortNumbers(customPortString string) {
+	ctrlPort = toString(ctrlBasePort)
 	udpPpsPort = customPortString
 }
 
@@ -71,6 +76,62 @@ func unitToNumber(s string) uint64 {
 	}
 }
 
+func truncateString(str string, num int) string {
+	s := str
+	l := len(str)
+	if l > num {
+		if num > 3 {
+			s = "..." + str[l-num+3:l]
+		} else {
+			s = str[l-num : l]
+		}
+	}
+	return s
+}
+
+func splitString(longString string, maxLen int) []string {
+	splits := []string{}
+
+	var l, r int
+	for l, r = 0, maxLen; r < len(longString); l, r = r, r+maxLen {
+		for !utf8.RuneStart(longString[r]) {
+			r--
+		}
+		splits = append(splits, longString[l:r])
+	}
+	splits = append(splits, longString[l:])
+	return splits
+}
+
+func durationToString(d time.Duration) string {
+	if d < 0 {
+		return d.String()
+	}
+	ud := uint64(d)
+	val := float64(ud)
+	unit := ""
+	if ud < uint64(60*time.Second) {
+		switch {
+		case ud < uint64(time.Microsecond):
+			unit = "ns"
+		case ud < uint64(time.Millisecond):
+			val = val / 1000
+			unit = "us"
+		case ud < uint64(time.Second):
+			val = val / (1000 * 1000)
+			unit = "ms"
+		default:
+			val = val / (1000 * 1000 * 1000)
+			unit = "s"
+		}
+
+		result := strconv.FormatFloat(val, 'f', 2, 64)
+		return result + unit
+	}
+
+	return d.String()
+}
+
 func testToString(testType ThunTestType) string {
 	switch testType {
 	case Bandwidth:
@@ -113,4 +174,39 @@ func toInt(s string) int {
 		return 0
 	}
 	return res
+}
+
+func bytesToRate(bytes uint64) string {
+	bits := bytes * 8
+	result := numberToUnit(bits)
+	return result
+}
+
+func ppsToString(pps uint64) string {
+	result := numberToUnit(pps)
+	return result
+}
+
+func numberToUnit(num uint64) string {
+	unit := ""
+	value := float64(num)
+
+	switch {
+	case num >= TERA:
+		unit = "T"
+		value = value / TERA
+	case num >= GIGA:
+		unit = "G"
+		value = value / GIGA
+	case num >= MEGA:
+		unit = "M"
+		value = value / MEGA
+	case num >= KILO:
+		unit = "K"
+		value = value / KILO
+	}
+
+	result := strconv.FormatFloat(value, 'f', 2, 64)
+	result = strings.TrimSuffix(result, ".00")
+	return result + unit
 }
