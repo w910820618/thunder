@@ -29,6 +29,7 @@ func main() {
 		mode = ethrModeClient
 
 	}
+
 	bufLen := unitToNumber(*bufLenStr)
 	generatePortNumbers(*portStr)
 	testParam := ThunTestParam{ThunTestID{ThunProtocol(UDP), Pps},
