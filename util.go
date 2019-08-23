@@ -14,13 +14,15 @@ var customPortRegex = regexp.MustCompile("(\\w+)=([0-9]+)")
 
 const hostAddr = ""
 
-var udpPpsPort, ctrlPort string
+var udpPpsPort, ctrlPort, udpBandwidthPort string
 
 var ctrlBasePort = 8888
+var udpBasePort = 9999
 
 func generatePortNumbers(customPortString string) {
 	ctrlPort = toString(ctrlBasePort)
 	udpPpsPort = customPortString
+	udpBandwidthPort = toString(udpBasePort)
 }
 
 const (
@@ -174,6 +176,12 @@ func toInt(s string) int {
 		return 0
 	}
 	return res
+}
+
+func ethrUnused(vals ...interface{}) {
+	for _, val := range vals {
+		_ = val
+	}
 }
 
 func bytesToRate(bytes uint64) string {

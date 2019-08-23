@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -177,6 +178,14 @@ type thunTest struct {
 	done       chan struct{}
 	connList   *list.List
 }
+type thunConn struct {
+	data    uint64
+	test    *thunTest
+	conn    net.Conn
+	elem    *list.Element
+	fd      uintptr
+	retrans uint64
+}
 
 type ethrMode uint32
 
@@ -313,6 +322,31 @@ func deleteKey(key string) {
 	gSessionKeys = gSessionKeys[:i]
 }
 
+func getFd(conn net.Conn) uintptr {
+	var fd uintptr
+	var rc syscall.RawConn
+	var err error
+	switch ct := conn.(type) {
+	case *net.TCPConn:
+		rc, err = ct.SyscallConn()
+		if err != nil {
+			return 0
+		}
+	case *net.UDPConn:
+		rc, err = ct.SyscallConn()
+		if err != nil {
+			return 0
+		}
+	default:
+		return 0
+	}
+	fn := func(s uintptr) {
+		fd = s
+	}
+	rc.Control(fn)
+	return fd
+}
+
 func sendSessionMsg(enc *gob.Encoder, ethrMsg *EthrMsg) error {
 	err := enc.Encode(ethrMsg)
 	if err != nil {
@@ -341,4 +375,24 @@ func createSynMsg(testParam ThunTestParam) (ethrMsg *EthrMsg) {
 	ethrMsg.Syn = &EthrMsgSyn{}
 	ethrMsg.Syn.TestParam = testParam
 	return
+}
+
+func (test *thunTest) newConn(conn net.Conn) (ec *thunConn) {
+	gSessionLock.Lock()
+	defer gSessionLock.Unlock()
+	ec = &thunConn{}
+	ec.test = test
+	ec.conn = conn
+	ec.fd = getFd(conn)
+	ec.elem = test.connList.PushBack(ec)
+	return
+}
+
+func (test *thunTest) connListDo(f func(*thunConn)) {
+	gSessionLock.RLock()
+	defer gSessionLock.RUnlock()
+	for e := test.connList.Front(); e != nil; e = e.Next() {
+		ec := e.Value.(*thunConn)
+		f(ec)
+	}
 }

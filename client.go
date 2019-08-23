@@ -88,7 +88,11 @@ func establishSession(testParam ThunTestParam, server string) (test *thunTest, e
 
 func runTest(test *thunTest, d time.Duration) {
 	startStatsTimer()
-	go runUDPPpsTest(test)
+	if test.testParam.TestID.Type == Bandwidth {
+		go runUDPBandwidthTest(test)
+	} else if test.testParam.TestID.Type == Pps {
+		go runUDPPpsTest(test)
+	}
 	test.isActive = true
 	toStop := make(chan int, 1)
 	runDurationTimer(d, toStop)
@@ -100,6 +104,46 @@ func runTest(test *thunTest, d time.Duration) {
 	switch reason {
 	case timeout:
 		fmt.Printf("Ethr done, duration: " + d.String() + ".")
+	}
+}
+
+func runUDPBandwidthTest(test *thunTest) {
+	server := test.session.remoteAddr
+	for th := uint32(0); th < test.testParam.NumThreads; th++ {
+		go func() {
+			buff := make([]byte, test.testParam.BufferSize)
+			conn, err := net.Dial("udp", server+":"+udpBandwidthPort)
+			if err != nil {
+				ui.printDbg("Unable to dial UDP, error: %v", err)
+				return
+			}
+			defer conn.Close()
+			ec := test.newConn(conn)
+			rserver, rport, _ := net.SplitHostPort(conn.RemoteAddr().String())
+			lserver, lport, _ := net.SplitHostPort(conn.LocalAddr().String())
+			ui.printMsg("[%3d] local %s port %s connected to %s port %s",
+				ec.fd, lserver, lport, rserver, rport)
+			blen := len(buff)
+		ExitForLoop:
+			for {
+				select {
+				case <-test.done:
+					break ExitForLoop
+				default:
+					n, err := conn.Write(buff)
+					if err != nil {
+						ui.printDbg("%v", err)
+						continue
+					}
+					if n < blen {
+						ui.printDbg("Partial write: %d", n)
+						continue
+					}
+					atomic.AddUint64(&ec.data, uint64(n))
+					atomic.AddUint64(&test.testResult.data, uint64(n))
+				}
+			}
+		}()
 	}
 }
 

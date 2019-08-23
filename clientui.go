@@ -85,6 +85,19 @@ func printTestResult(test *thunTest, value uint64, seconds uint64) {
 			ui.printMsg("- - - - - - - - - - - - - - - - - - - - - - -")
 			ui.printMsg("[ ID]   Protocol    Interval      Bits/s")
 		}
+		cvalue := uint64(0)
+		ccount := 0
+		test.connListDo(func(ec *thunConn) {
+			val := atomic.SwapUint64(&ec.data, 0)
+			val /= seconds
+			if !gNoConnectionStats {
+				ui.printMsg("[%3d]     %-5s    %03d-%03d sec   %7s", ec.fd,
+					protoToString(test.testParam.TestID.Protocol),
+					gInterval, gInterval+1, bytesToRate(val))
+			}
+			cvalue += val
+			ccount++
+		})
 		if test.testParam.TestID.Type == Pps {
 			if gInterval == 0 {
 				ui.printMsg("- - - - - - - - - - - - - - - - - - - - - - -")
@@ -96,18 +109,32 @@ func printTestResult(test *thunTest, value uint64, seconds uint64) {
 			logResults([]string{test.session.remoteAddr, protoToString(test.testParam.TestID.Protocol),
 				"", "", ppsToString(value), ""})
 		}
+	} else if test.testParam.TestID.Type == Bandwidth &&
+		(test.testParam.TestID.Protocol == HTTP || test.testParam.TestID.Protocol == HTTPS) {
+		if gInterval == 0 {
+			ui.printMsg("- - - - - - - - - - - - - - - - - - - - - - -")
+			ui.printMsg("Protocol    Interval      Bits/s")
+		}
+		ui.printMsg("  %-5s    %03d-%03d sec   %7s",
+			protoToString(test.testParam.TestID.Protocol),
+			gInterval, gInterval+1, bytesToRate(value))
+		logResults([]string{test.session.remoteAddr, protoToString(test.testParam.TestID.Protocol),
+			bytesToRate(value), "", "", ""})
 	}
 	gInterval++
 }
 
 func (u *clientUI) emitTestResult(s *thunSession, proto ThunProtocol, seconds uint64) {
 	var data uint64
+	var testList = []ThunTestType{Bandwidth, Cps, Pps}
+	for _, testType := range testList {
 
-	test, found := s.tests[ThunTestID{proto, Pps}]
-	if found {
-		data = atomic.SwapUint64(&test.testResult.data, 0)
-		data /= seconds
-		printTestResult(test, data, seconds)
+		test, found := s.tests[ThunTestID{proto, testType}]
+		if found && test.isActive {
+			data = atomic.SwapUint64(&test.testResult.data, 0)
+			data /= seconds
+			printTestResult(test, data, seconds)
+		}
+
 	}
-
 }
