@@ -72,11 +72,7 @@ func handleRequest(conn net.Conn) {
 	}
 	ui.emitTestHdr()
 	if test.testParam.TestID.Protocol == UDP {
-		if test.testParam.TestID.Type == Bandwidth {
-			err = runUDPBandwidthServer(test)
-		} else if test.testParam.TestID.Type == Pps {
-			err = runUDPPpsServer(test)
-		}
+		err = runUDPServer(test)
 		if err != nil {
 			ui.printDbg("Error encounterd in running UDP test (%s): %v",
 				testToString(testParam.TestID.Type), err)
@@ -114,7 +110,7 @@ func finiServer() {
 	logFini()
 }
 
-func runUDPBandwidthServer(test *thunTest) error {
+func runUDPServer(test *thunTest) error {
 	udpAddr, err := net.ResolveUDPAddr("udp", hostAddr+":"+udpBandwidthPort)
 	if err != nil {
 		ui.printDbg("Unable to resolve UDP address: %v", err)
@@ -134,14 +130,14 @@ func runUDPBandwidthServer(test *thunTest) error {
 		// more threads than NumCPU(). TODO: Evaluate this in future.
 		//
 		for i := 0; i < runtime.NumCPU(); i++ {
-			go runUDPBandwidthHandler(test, l)
+			go runUDPHandler(test, l)
 		}
 		<-test.done
 	}(l)
 	return nil
 }
 
-func runUDPBandwidthHandler(test *thunTest, conn *net.UDPConn) {
+func runUDPHandler(test *thunTest, conn *net.UDPConn) {
 	buffer := make([]byte, test.testParam.BufferSize)
 	n, remoteAddr, err := 0, new(net.UDPAddr), error(nil)
 	for err == nil {
@@ -154,51 +150,10 @@ func runUDPBandwidthHandler(test *thunTest, conn *net.UDPConn) {
 		server, port, _ := net.SplitHostPort(remoteAddr.String())
 		test := getTest(server, UDP, Bandwidth)
 		if test != nil {
-			atomic.AddUint64(&test.testResult.data, uint64(n))
+			atomic.AddUint64(&test.testResult.bpsdata, uint64(n))
+			atomic.AddUint64(&test.testResult.ppsdata, 1)
 		} else {
 			ui.printDbg("Received unsolicited UDP traffic on port %s from %s port %s", udpPpsPort, server, port)
-		}
-	}
-}
-
-func runUDPPpsServer(test *thunTest) error {
-	udpAddr, err := net.ResolveUDPAddr("udp", test.session.remoteAddr+":"+udpPpsPort)
-	if err != nil {
-		ui.printDbg("Unable to resolve UDP address: %v", err)
-		return err
-	}
-	l, err := net.ListenUDP("udp", udpAddr)
-	if err != nil {
-		ui.printDbg("Error listening on %s for UDP pkt/s tests: %v", udpPpsPort, err)
-		return err
-	}
-	go func(l *net.UDPConn) {
-		defer l.Close()
-
-		for i := 0; i < runtime.NumCPU(); i++ {
-			go runUDPPpsHandler(test, l)
-		}
-		<-test.done
-	}(l)
-
-	return nil
-}
-
-func runUDPPpsHandler(test *thunTest, conn *net.UDPConn) {
-	buffer := make([]byte, test.testParam.BufferSize)
-	_, remoteAddr, err := 0, new(net.UDPAddr), error(nil)
-	for err == nil {
-		_, remoteAddr, err = conn.ReadFromUDP(buffer)
-		if err != nil {
-			ui.printDbg("Error receiving data from UDP for pkt/s test: %v\n", err)
-			continue
-		}
-		server, port, _ := net.SplitHostPort(remoteAddr.String())
-		test := getTest(server, UDP, Pps)
-		if test != nil {
-			atomic.AddUint64(&test.testResult.data, 1)
-		} else {
-			ui.printDbg("Received unsolicited UDP traffic on port %s from %s port %s\n", udpPpsPort, server, port)
 		}
 	}
 }

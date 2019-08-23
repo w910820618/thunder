@@ -399,20 +399,17 @@ func getTestResults(s *thunSession, proto ThunProtocol, seconds uint64) []string
 	test, found := s.tests[ThunTestID{proto, Bandwidth}]
 	if found {
 		bwTestOn = true
-		bw = atomic.SwapUint64(&test.testResult.data, 0)
+		bw = atomic.SwapUint64(&test.testResult.bpsdata, 0)
 		bw /= seconds
 		aggTestResult.bw += bw
 		aggTestResult.cbw++
-	}
-	test, found = s.tests[ThunTestID{proto, Pps}]
-	if found {
+
 		ppsTestOn = true
-		pps = atomic.SwapUint64(&test.testResult.data, 0)
+		pps = atomic.SwapUint64(&test.testResult.ppsdata, 0)
 		pps /= seconds
 		aggTestResult.pps += pps
 		aggTestResult.cpps++
 	}
-
 	if bwTestOn || cpsTestOn || ppsTestOn || latTestOn {
 		var bwStr, cpsStr, ppsStr, latStr string
 		if bwTestOn {

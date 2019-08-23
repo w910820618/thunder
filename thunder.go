@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"runtime"
-	"thunder/internal/cmd"
 	"time"
 )
 
@@ -14,7 +12,7 @@ func main() {
 	*/
 	isServer := flag.Bool("s", false, "")
 	clientDest := flag.String("c", "", "")
-	testTypePtr := flag.String("t", "", "")
+	//testTypePtr := flag.String("t", "", "")
 	thCount := flag.Int("n", 1, "")
 	showUI := flag.Bool("ui", false, "")
 	duration := flag.Duration("d", 10*time.Second, "")
@@ -34,28 +32,35 @@ func main() {
 
 	var testType ThunTestType
 
-	switch *testTypePtr {
-	case "":
-		switch mode {
-		case ethrModeServer:
-			testType = All
-		case ethrModeClient:
-			testType = Bandwidth
-		}
-	case "b":
+	switch mode {
+	case ethrModeServer:
+		testType = All
+	case ethrModeClient:
 		testType = Bandwidth
-	case "c":
-		testType = Cps
-	case "p":
-		testType = Pps
-	case "l":
-		testType = Latency
-	case "cl":
-		testType = ConnLatency
-	default:
-		cmd.PrintUsageError(fmt.Sprintf("Invalid value \"%s\" specified for parameter \"-t\".\n"+
-			"Valid parameters and values are:\n", *testTypePtr))
 	}
+
+	//switch *testTypePtr {
+	//case "":
+	//	switch mode {
+	//	case ethrModeServer:
+	//		testType = All
+	//	case ethrModeClient:
+	//		testType = Bandwidth
+	//	}
+	//case "b":
+	//	testType = Bandwidth
+	//case "c":
+	//	testType = Cps
+	//case "p":
+	//	testType = Pps
+	//case "l":
+	//	testType = Latency
+	//case "cl":
+	//	testType = ConnLatency
+	//default:
+	//	cmd.PrintUsageError(fmt.Sprintf("Invalid value \"%s\" specified for parameter \"-t\".\n"+
+	//		"Valid parameters and values are:\n", *testTypePtr))
+	//}
 
 	if *thCount <= 0 {
 		*thCount = runtime.NumCPU()

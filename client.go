@@ -88,11 +88,7 @@ func establishSession(testParam ThunTestParam, server string) (test *thunTest, e
 
 func runTest(test *thunTest, d time.Duration) {
 	startStatsTimer()
-	if test.testParam.TestID.Type == Bandwidth {
-		go runUDPBandwidthTest(test)
-	} else if test.testParam.TestID.Type == Pps {
-		go runUDPPpsTest(test)
-	}
+	go runUDPTest(test)
 	test.isActive = true
 	toStop := make(chan int, 1)
 	runDurationTimer(d, toStop)
@@ -107,7 +103,7 @@ func runTest(test *thunTest, d time.Duration) {
 	}
 }
 
-func runUDPBandwidthTest(test *thunTest) {
+func runUDPTest(test *thunTest) {
 	server := test.session.remoteAddr
 	for th := uint32(0); th < test.testParam.NumThreads; th++ {
 		go func() {
@@ -140,31 +136,8 @@ func runUDPBandwidthTest(test *thunTest) {
 						continue
 					}
 					atomic.AddUint64(&ec.data, uint64(n))
-					atomic.AddUint64(&test.testResult.data, uint64(n))
-				}
-			}
-		}()
-	}
-}
-
-func runUDPPpsTest(test *thunTest) {
-	server := test.session.remoteAddr
-	for th := uint32(0); th < test.testParam.NumThreads; th++ {
-		go func() {
-			conn, err := net.Dial("udp", server+":"+udpPpsPort)
-			if err != nil {
-				fmt.Println("Can't dial: ", err)
-			}
-			defer conn.Close()
-			buff := make([]byte, test.testParam.BufferSize)
-			for {
-				select {
-				default:
-					_, err := conn.Write(buff)
-					if err != nil {
-						continue
-					}
-					atomic.AddUint64(&test.testResult.data, 1)
+					atomic.AddUint64(&test.testResult.bpsdata, uint64(n))
+					atomic.AddUint64(&test.testResult.ppsdata, 1)
 				}
 			}
 		}()

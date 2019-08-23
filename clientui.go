@@ -131,7 +131,7 @@ func (u *clientUI) emitTestResult(s *thunSession, proto ThunProtocol, seconds ui
 
 		test, found := s.tests[ThunTestID{proto, testType}]
 		if found && test.isActive {
-			data = atomic.SwapUint64(&test.testResult.data, 0)
+			data = atomic.SwapUint64(&test.testResult.bpsdata, 0)
 			data /= seconds
 			printTestResult(test, data, seconds)
 		}

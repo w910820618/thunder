@@ -162,7 +162,8 @@ type thunSession struct {
 }
 
 type thunTestResult struct {
-	data uint64
+	bpsdata uint64
+	ppsdata uint64
 }
 
 type thunTest struct {
