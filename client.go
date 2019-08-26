@@ -108,7 +108,7 @@ func runUDPTest(test *thunTest) {
 	for th := uint32(0); th < test.testParam.NumThreads; th++ {
 		go func() {
 			buff := make([]byte, test.testParam.BufferSize)
-			conn, err := net.Dial("udp", server+":"+udpBandwidthPort)
+			conn, err := net.Dial("udp", server+":"+udpPort)
 			if err != nil {
 				ui.printDbg("Unable to dial UDP, error: %v", err)
 				return

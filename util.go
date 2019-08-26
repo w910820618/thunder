@@ -12,17 +12,17 @@ import (
 
 var customPortRegex = regexp.MustCompile("(\\w+)=([0-9]+)")
 
-const hostAddr = ""
+var hostAddr string
 
-var udpPpsPort, ctrlPort, udpBandwidthPort string
+var udpPpsPort, ctrlPort, udpPort string
 
 var ctrlBasePort = 8888
 var udpBasePort = 9999
 
-func generatePortNumbers(customPortString string) {
+func generateAddr(hostAddrStr string) {
 	ctrlPort = toString(ctrlBasePort)
-	udpPpsPort = customPortString
-	udpBandwidthPort = toString(udpBasePort)
+	udpPort = toString(udpBasePort)
+	hostAddr = hostAddrStr
 }
 
 const (
