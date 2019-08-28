@@ -66,6 +66,8 @@ func main() {
 		*thCount = runtime.NumCPU()
 	}
 
+	runtime.GOMAXPROCS(*thCount)
+
 	generateAddr(*hostAddrStr)
 	testParam := ThunTestParam{ThunTestID{ThunProtocol(UDP), testType},
 		uint32(bufLen),

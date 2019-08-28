@@ -26,7 +26,6 @@ func runServer(testParam ThunTestParam, serverParam ethrServerParam) {
 		}
 		go handleRequest(conn)
 	}
-
 }
 
 func initServer(showUI bool) {
@@ -65,18 +64,18 @@ func handleRequest(conn net.Conn) {
 	}
 	ui.printMsg("New control connection from " + server + ", port " + port)
 	test, err := newTest(server, conn, testParam, enc, dec)
-	cleanupFunc := func() {
-		test.ctrlConn.Close()
-		close(test.done)
-		deleteTest(test)
-	}
+	//cleanupFunc := func() {
+	//	test.ctrlConn.Close()
+	//	close(test.done)
+	//	deleteTest(test)
+	//}
 	ui.emitTestHdr()
 	if test.testParam.TestID.Protocol == UDP {
 		err = runUDPServer(test)
 		if err != nil {
 			ui.printDbg("Error encounterd in running UDP test (%s): %v",
 				testToString(testParam.TestID.Type), err)
-			cleanupFunc()
+			//cleanupFunc()
 			return
 		}
 	}
@@ -85,7 +84,7 @@ func handleRequest(conn net.Conn) {
 	err = sendSessionMsg(enc, ethrMsg)
 	if err != nil {
 		ui.printErr("send session message: %v", err)
-		cleanupFunc()
+		//cleanupFunc()
 		return
 	}
 	time.Sleep(delay)
@@ -95,7 +94,7 @@ func handleRequest(conn net.Conn) {
 	<-waitForChannelStop
 	test.isActive = false
 	ui.printMsg("Ending " + testToString(testParam.TestID.Type) + " test from " + server)
-	cleanupFunc()
+	//cleanupFunc()
 	if len(gSessionKeys) > 0 {
 		ui.emitTestHdr()
 	}
