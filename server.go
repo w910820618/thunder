@@ -63,19 +63,29 @@ func handleRequest(conn net.Conn) {
 		return
 	}
 	ui.printMsg("New control connection from " + server + ", port " + port)
+	ui.printMsg("Starting " + protoToString(testParam.TestID.Protocol) + " " +
+		testToString(testParam.TestID.Type) + " test from " + server)
 	test, err := newTest(server, conn, testParam, enc, dec)
-	//cleanupFunc := func() {
-	//	test.ctrlConn.Close()
-	//	close(test.done)
-	//	deleteTest(test)
-	//}
+	if err != nil {
+		msg := "Rejected duplicate " + protoToString(testParam.TestID.Protocol) + " " +
+			testToString(testParam.TestID.Type) + " test from " + server
+		ui.printMsg(msg)
+		ethrMsg = createFinMsg(msg)
+		sendSessionMsg(enc, ethrMsg)
+		return
+	}
+	cleanupFunc := func() {
+		test.ctrlConn.Close()
+		close(test.done)
+		deleteTest(test)
+	}
 	ui.emitTestHdr()
 	if test.testParam.TestID.Protocol == UDP {
 		err = runUDPServer(test)
 		if err != nil {
 			ui.printDbg("Error encounterd in running UDP test (%s): %v",
 				testToString(testParam.TestID.Type), err)
-			//cleanupFunc()
+			cleanupFunc()
 			return
 		}
 	}
@@ -84,7 +94,7 @@ func handleRequest(conn net.Conn) {
 	err = sendSessionMsg(enc, ethrMsg)
 	if err != nil {
 		ui.printErr("send session message: %v", err)
-		//cleanupFunc()
+		cleanupFunc()
 		return
 	}
 	time.Sleep(delay)
@@ -94,7 +104,7 @@ func handleRequest(conn net.Conn) {
 	<-waitForChannelStop
 	test.isActive = false
 	ui.printMsg("Ending " + testToString(testParam.TestID.Type) + " test from " + server)
-	//cleanupFunc()
+	cleanupFunc()
 	if len(gSessionKeys) > 0 {
 		ui.emitTestHdr()
 	}
@@ -137,7 +147,6 @@ func runUDPServer(test *thunTest) error {
 }
 
 func runUDPHandler(test *thunTest, conn *net.UDPConn) {
-	defer wg.Done()
 	buffer := make([]byte, test.testParam.BufferSize)
 	n, remoteAddr, err := 0, new(net.UDPAddr), error(nil)
 	for err == nil {

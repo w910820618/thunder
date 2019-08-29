@@ -4,12 +4,16 @@ import (
 	"encoding/gob"
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
 	"sync/atomic"
 	"time"
 )
 
 const (
-	timeout = 0
+	timeout    = 0
+	interrupt  = 1
+	serverDone = 2
 )
 
 func runDurationTimer(d time.Duration, toStop chan int) {
@@ -34,6 +38,29 @@ func runClient(testParam ThunTestParam, clientParam thunClientParam, server stri
 
 func initClient() {
 	initClientUI()
+}
+
+func handleCtrlC(toStop chan int) {
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, os.Kill)
+	go func() {
+		sig := <-sigChan
+		switch sig {
+		case os.Interrupt:
+			fallthrough
+		case os.Kill:
+			toStop <- interrupt
+		}
+	}()
+}
+
+func clientWatchControlChannel(test *thunTest, toStop chan int) {
+	go func() {
+		waitForChannelStop := make(chan bool, 1)
+		watchControlChannel(test, waitForChannelStop)
+		<-waitForChannelStop
+		toStop <- serverDone
+	}()
 }
 
 func establishSession(testParam ThunTestParam, server string) (test *thunTest, err error) {
@@ -92,6 +119,8 @@ func runTest(test *thunTest, d time.Duration) {
 	test.isActive = true
 	toStop := make(chan int, 1)
 	runDurationTimer(d, toStop)
+	clientWatchControlChannel(test, toStop)
+	handleCtrlC(toStop)
 	reason := <-toStop
 	close(test.done)
 	sendSessionMsg(test.enc, &EthrMsg{})
@@ -100,6 +129,10 @@ func runTest(test *thunTest, d time.Duration) {
 	switch reason {
 	case timeout:
 		fmt.Printf("Ethr done, duration: " + d.String() + ".")
+	case interrupt:
+		ui.printMsg("Ethr done, received interrupt signal.")
+	case serverDone:
+		ui.printMsg("Ethr done, server terminated the session.")
 	}
 }
 
