@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var wg sync.WaitGroup
+
 type ethrServerParam struct {
 	showUI bool
 }
