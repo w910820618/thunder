@@ -137,6 +137,7 @@ func runUDPServer(test *thunTest) error {
 }
 
 func runUDPHandler(test *thunTest, conn *net.UDPConn) {
+	defer wg.Done()
 	buffer := make([]byte, test.testParam.BufferSize)
 	n, remoteAddr, err := 0, new(net.UDPAddr), error(nil)
 	for err == nil {
