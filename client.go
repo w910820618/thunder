@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"net"
-	"runtime"
 	"sync/atomic"
 	"time"
 )
@@ -108,7 +107,6 @@ func runUDPTest(test *thunTest) {
 	server := test.session.remoteAddr
 	for th := uint32(0); th < test.testParam.NumThreads; th++ {
 		go func() {
-			runtime.LockOSThread()
 			buff := make([]byte, test.testParam.BufferSize)
 			conn, err := net.Dial("udp", server+":"+udpPort)
 			if err != nil {
