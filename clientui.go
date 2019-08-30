@@ -58,7 +58,7 @@ func (u *clientUI) emitLatencyResults(remote, proto string, avg, min, max, p50, 
 func (u *clientUI) emitTestResultEnd() {
 }
 
-func (u *clientUI) emitStats(netStats stats.EthrNetStats) {
+func (u *clientUI) emitStats(netStats stats.ThunNetStats) {
 }
 
 func (u *clientUI) printTestResults(s []string) {
@@ -90,14 +90,40 @@ func printTestResult(test *thunTest, value uint64, seconds uint64) {
 		test.connListDo(func(ec *thunConn) {
 			val := atomic.SwapUint64(&ec.data, 0)
 			val /= seconds
-			if !gNoConnectionStats {
-				ui.printMsg("[%3d]     %-5s    %03d-%03d sec   %7s   %7s", ec.fd,
-					protoToString(test.testParam.TestID.Protocol),
-					gInterval, gInterval+1, bytesToRate(val), ppsToString(value))
-			}
 			cvalue += val
 			ccount++
 		})
+		if ccount > 1 || gNoConnectionStats {
+			ui.printMsg("[SUM]     %-5s    %03d-%03d sec   %7s   %7s",
+				protoToString(test.testParam.TestID.Protocol),
+				gInterval, gInterval+1, bytesToRate(cvalue), ppsToString(value))
+			if !gNoConnectionStats {
+				ui.printMsg("- - - - - - - - - - - - - - - - - - - - - - -")
+			}
+		}
+		logResults([]string{test.session.remoteAddr, protoToString(test.testParam.TestID.Protocol),
+			bytesToRate(cvalue), "", ppsToString(value), ""})
+	} else if test.testParam.TestID.Type == Cps {
+		if gInterval == 0 {
+			ui.printMsg("- - - - - - - - - - - - - - - - - - - - - - -")
+			ui.printMsg("Protocol    Interval      Conn/s")
+		}
+		ui.printMsg("  %-5s    %03d-%03d sec   %7s",
+			protoToString(test.testParam.TestID.Protocol),
+			gInterval, gInterval+1, cpsToString(value))
+		logResults([]string{test.session.remoteAddr, protoToString(test.testParam.TestID.Protocol),
+			"", cpsToString(value), "", ""})
+	} else if test.testParam.TestID.Type == Bandwidth &&
+		(test.testParam.TestID.Protocol == HTTP || test.testParam.TestID.Protocol == HTTPS) {
+		if gInterval == 0 {
+			ui.printMsg("- - - - - - - - - - - - - - - - - - - - - - -")
+			ui.printMsg("Protocol    Interval      Bits/s")
+		}
+		ui.printMsg("  %-5s    %03d-%03d sec   %7s",
+			protoToString(test.testParam.TestID.Protocol),
+			gInterval, gInterval+1, bytesToRate(value))
+		logResults([]string{test.session.remoteAddr, protoToString(test.testParam.TestID.Protocol),
+			bytesToRate(value), "", "", ""})
 	}
 	gInterval++
 }
@@ -109,7 +135,7 @@ func (u *clientUI) emitTestResult(s *thunSession, proto ThunProtocol, seconds ui
 
 		test, found := s.tests[ThunTestID{proto, testType}]
 		if found && test.isActive {
-			ppsdata = atomic.SwapUint64(&test.testResult.ppsdata, 0)
+			ppsdata = atomic.SwapUint64(&test.testResult.data, 0)
 			ppsdata /= seconds
 			printTestResult(test, ppsdata, seconds)
 		}

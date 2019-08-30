@@ -13,22 +13,22 @@ import (
 	"thunder/internal/stats"
 )
 
-type ethrTestResultAggregate struct {
+type thunTestResultAggregate struct {
 	bw, cps, pps    uint64
 	cbw, ccps, cpps uint64
 }
 
-var gAggregateTestResults = make(map[ThunProtocol]*ethrTestResultAggregate)
+var gAggregateTestResults = make(map[ThunProtocol]*thunTestResultAggregate)
 
 //
 // Initialization functions.
 //
 func initServerUI(showUI bool) {
-	gAggregateTestResults[TCP] = &ethrTestResultAggregate{}
-	gAggregateTestResults[UDP] = &ethrTestResultAggregate{}
-	gAggregateTestResults[HTTP] = &ethrTestResultAggregate{}
-	gAggregateTestResults[HTTPS] = &ethrTestResultAggregate{}
-	gAggregateTestResults[ICMP] = &ethrTestResultAggregate{}
+	gAggregateTestResults[TCP] = &thunTestResultAggregate{}
+	gAggregateTestResults[UDP] = &thunTestResultAggregate{}
+	gAggregateTestResults[HTTP] = &thunTestResultAggregate{}
+	gAggregateTestResults[HTTPS] = &thunTestResultAggregate{}
+	gAggregateTestResults[ICMP] = &thunTestResultAggregate{}
 	if !showUI || !initServerTui() {
 		initServerCli()
 	}
@@ -210,7 +210,7 @@ func (u *serverTui) emitLatencyResults(remote, proto string, avg, min, max, p50,
 func (u *serverTui) paint(seconds uint64) {
 	tm.Clear(tm.ColorDefault, tm.ColorDefault)
 	defer tm.Flush()
-	printCenterText(0, 0, u.w, "Ethr ", tm.ColorBlack, tm.ColorWhite)
+	printCenterText(0, 0, u.w, "Thun ", tm.ColorBlack, tm.ColorWhite)
 	printHLineText(u.resX, u.resY-1, u.resW, "Test Results")
 	printHLineText(u.statX, u.statY-1, u.statW, "Statistics")
 	printVLine(u.topVSplitX, u.topVSplitY, u.topVSplitH)
@@ -278,10 +278,10 @@ func (u *serverTui) paint(seconds uint64) {
 		tm.ColorDefault, tm.ColorDefault)
 }
 
-var gPrevNetStats stats.EthrNetStats
-var gCurNetStats stats.EthrNetStats
+var gPrevNetStats stats.ThunNetStats
+var gCurNetStats stats.ThunNetStats
 
-func (u *serverTui) emitStats(netStats stats.EthrNetStats) {
+func (u *serverTui) emitStats(netStats stats.ThunNetStats) {
 	gPrevNetStats = gCurNetStats
 	gCurNetStats = netStats
 }
@@ -356,7 +356,7 @@ func (u *serverCli) emitLatencyResults(remote, proto string, avg, min, max, p50,
 	logLatency(remote, proto, avg, min, max, p50, p90, p95, p99, p999, p9999)
 }
 
-func (u *serverCli) emitStats(netStats stats.EthrNetStats) {
+func (u *serverCli) emitStats(netStats stats.ThunNetStats) {
 }
 
 func (u *serverCli) printTestResults(s []string) {
@@ -394,21 +394,34 @@ func emitAggregate(proto ThunProtocol) {
 
 func getTestResults(s *thunSession, proto ThunProtocol, seconds uint64) []string {
 	var bwTestOn, cpsTestOn, ppsTestOn, latTestOn bool
-	var bw, pps, latency uint64
+	var bw, cps, pps, latency uint64
 	aggTestResult, _ := gAggregateTestResults[proto]
 	test, found := s.tests[ThunTestID{proto, Bandwidth}]
-	if found {
+	if found && test.isActive {
 		bwTestOn = true
-		bw = atomic.SwapUint64(&test.testResult.bpsdata, 0)
+		bw = atomic.SwapUint64(&test.testResult.bandwidth, 0)
 		bw /= seconds
 		aggTestResult.bw += bw
 		aggTestResult.cbw++
 
 		ppsTestOn = true
-		pps = atomic.SwapUint64(&test.testResult.ppsdata, 0)
+		pps = atomic.SwapUint64(&test.testResult.data, 0)
 		pps /= seconds
 		aggTestResult.pps += pps
 		aggTestResult.cpps++
+	}
+	test, found = s.tests[ThunTestID{proto, Cps}]
+	if found && test.isActive {
+		cpsTestOn = true
+		cps = atomic.SwapUint64(&test.testResult.data, 0)
+		cps /= seconds
+		aggTestResult.cps += cps
+		aggTestResult.ccps++
+	}
+	test, found = s.tests[ThunTestID{proto, Latency}]
+	if found && test.isActive {
+		latTestOn = true
+		latency = atomic.LoadUint64(&test.testResult.data)
 	}
 	if bwTestOn || cpsTestOn || ppsTestOn || latTestOn {
 		var bwStr, cpsStr, ppsStr, latStr string

@@ -301,14 +301,14 @@ type tcpStat struct {
 type osStats struct {
 }
 
-func (s osStats) GetNetDevStats() ([]EthrNetDevStat, error) {
+func (s osStats) GetNetDevStats() ([]thunNetDevStat, error) {
 	ifs, err := net.Interfaces()
 	if err != nil {
 		return nil, errors.Wrap(err, "GetNetDevStats: error getting network interfaces")
 	}
 
-	var res []EthrNetDevStat
-	res = make([]EthrNetDevStat, len(ifs))
+	var res []thunNetDevStat
+	res = make([]thunNetDevStat, len(ifs))
 
 	for i, iface := range ifs {
 		if iface.Flags&net.FlagUp == 0 {
@@ -322,7 +322,7 @@ func (s osStats) GetNetDevStats() ([]EthrNetDevStat, error) {
 			continue
 		}
 
-		res[i] = EthrNetDevStat{
+		res[i] = thunNetDevStat{
 			InterfaceName: iface.Name,
 			RxBytes:       ifaceData.Data.Ibytes,
 			RxPkts:        ifaceData.Data.Ipackets,
@@ -344,14 +344,14 @@ func getIfaceData(index int) (*ifMsghdr2, error) {
 }
 
 // GetTCPStats returns the TCP retransmits count
-func (s osStats) GetTCPStats() (EthrTCPStat, error) {
+func (s osStats) GetTCPStats() (thunTCPStat, error) {
 	var data tcpStat
 	rawData, err := unix.SysctlRaw("net.inet.tcp.stats")
 	if err != nil {
-		return EthrTCPStat{}, errors.Wrap(err, "GetTCPStats: could not get net.inet.tcp.stats")
+		return thunTCPStat{}, errors.Wrap(err, "GetTCPStats: could not get net.inet.tcp.stats")
 	}
 	buf := bytes.NewReader(rawData)
 	binary.Read(buf, binary.LittleEndian, &data)
 
-	return EthrTCPStat{uint64(data.Sndrexmitpack)}, nil
+	return thunTCPStat{uint64(data.Sndrexmitpack)}, nil
 }

@@ -7,9 +7,9 @@ package cmd
 
 import "fmt"
 
-// EthrUsage prints the command-line usage text
-func EthrUsage(gVersion string) {
-	fmt.Println("\nEthr - A comprehensive network performance measurement tool.")
+// thunUsage prints the command-line usage text
+func thunUsage(gVersion string) {
+	fmt.Println("\nthun - A comprehensive network performance measurement tool.")
 	fmt.Println("Version: " + gVersion)
 	fmt.Println("It supports 4 modes. Usage of each mode is described below:")
 
@@ -18,10 +18,10 @@ func EthrUsage(gVersion string) {
 	PrintFlagUsage("h", "", "Help")
 	PrintFlagUsage("no", "", "Disable logging to file. Logging to file is enabled by default.")
 	PrintFlagUsage("o", "<filename>", "Name of log file. By default, following file names are used:",
-		"Server mode: 'ethrs.log'",
-		"Client mode: 'ethrc.log'",
-		"External server mode: 'ethrxs.log'",
-		"External client mode: 'ethrxc.log'")
+		"Server mode: 'thuns.log'",
+		"Client mode: 'thunc.log'",
+		"External server mode: 'thunxs.log'",
+		"External client mode: 'thunxc.log'")
 	PrintFlagUsage("debug", "", "Enable debug information in logging output.")
 	PrintFlagUsage("4", "", "Use only IP v4 version")
 	PrintFlagUsage("6", "", "Use only IP v6 version")

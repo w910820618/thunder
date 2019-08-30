@@ -10,90 +10,101 @@ import (
 	"time"
 )
 
-type ethrServerParam struct {
+type thunServerParam struct {
 	showUI bool
 }
 
 type thunClientParam struct {
 	duration time.Duration
+	gap      time.Duration
 }
 
-// EthrMsgType represents the message type.
-type EthrMsgType uint32
+// ThunMsgType represents the message type.
+type ThunMsgType uint32
+
+type thunIPVer uint32
 
 const (
-	// EthrInv represents the Inv message.
-	EthrInv EthrMsgType = iota
-
-	// EthrSyn represents the Syn message.
-	EthrSyn
-
-	// EthrAck represents the Ack message.
-	EthrAck
-
-	// EthrFin represents the Fin message.
-	EthrFin
-
-	// EthrBgn represents the Bgn message.
-	EthrBgn
-
-	// EthrEnd represents the End message.
-	EthrEnd
+	thunIPAny thunIPVer = iota
+	thunIPv4
+	thunIPv6
 )
 
-// EthrMsgVer represents the message version.
-type EthrMsgVer uint32
+var ipVer thunIPVer = thunIPAny
 
-// EthrMsg represents the message entity.
-type EthrMsg struct {
+const (
+	// ThunInv represents the Inv message.
+	ThunInv ThunMsgType = iota
+
+	// ThunSyn represents the Syn message.
+	ThunSyn
+
+	// ThunAck represents the Ack message.
+	ThunAck
+
+	// ThunFin represents the Fin message.
+	ThunFin
+
+	// ThunBgn represents the Bgn message.
+	ThunBgn
+
+	// ThunEnd represents the End message.
+	ThunEnd
+)
+
+// ThunMsgVer represents the message version.
+type ThunMsgVer uint32
+
+// ThunMsg represents the message entity.
+type ThunMsg struct {
 	// Version represents the message version.
-	Version EthrMsgVer
+	Version ThunMsgVer
 
 	// Type represents the message type.
-	Type EthrMsgType
+	Type ThunMsgType
 
 	// Syn represents the Syn value.
-	Syn *EthrMsgSyn
+	Syn *ThunMsgSyn
 
 	// Ack represents the Ack value.
-	Ack *EthrMsgAck
+	Ack *ThunMsgAck
 
 	// Fin represents the Fin value.
-	Fin *EthrMsgFin
+	Fin *ThunMsgFin
 
 	// Bgn represents the Bgn value.
-	Bgn *EthrMsgBgn
+	Bgn *ThunMsgBgn
 
 	// End represents the End value.
-	End *EthrMsgEnd
+	End *ThunMsgEnd
 }
 
-// EthrMsgSyn represents the Syn entity.
-type EthrMsgSyn struct {
+// ThunMsgSyn represents the Syn entity.
+type ThunMsgSyn struct {
 	// TestParam represents the test parameters.
 	TestParam ThunTestParam
 }
 
-// EthrMsgAck represents the Ack entity.
-type EthrMsgAck struct {
+// ThunMsgAck represents the Ack entity.
+type ThunMsgAck struct {
 	Cert        []byte
 	NapDuration time.Duration
 }
 
-// EthrMsgFin represents the Fin entity.
-type EthrMsgFin struct {
+// ThunMsgFin represents the Fin entity.
+type ThunMsgFin struct {
 	// Message represents the message body.
 	Message string
 }
 
-// EthrMsgBgn represents the Bgn entity.
-type EthrMsgBgn struct {
+// ThunMsgBgn represents the Bgn entity.
+type ThunMsgBgn struct {
 	// UDPPort represents the udp port.
 	UDPPort string
 }
 
-// EthrMsgEnd represents the End entity.
-type EthrMsgEnd struct {
+// ThunMsgEnd represents the End entity.
+type ThunMsgEnd struct {
 	// Message represents the message body.
 	Message string
 }
@@ -153,6 +164,10 @@ type ThunTestParam struct {
 	BufferSize uint32
 
 	NumThreads uint32
+
+	RttCount uint32
+
+	Reverse bool
 }
 
 type thunSession struct {
@@ -162,8 +177,9 @@ type thunSession struct {
 }
 
 type thunTestResult struct {
-	bpsdata uint64
-	ppsdata uint64
+	latency   uint64
+	bandwidth uint64
+	data      uint64
 }
 
 type thunTest struct {
@@ -173,7 +189,7 @@ type thunTest struct {
 	refCount   int32
 	enc        *gob.Encoder
 	dec        *gob.Decoder
-	rcvdMsgs   chan *EthrMsg
+	rcvdMsgs   chan *ThunMsg
 	testParam  ThunTestParam
 	testResult thunTestResult
 	done       chan struct{}
@@ -188,14 +204,16 @@ type thunConn struct {
 	retrans uint64
 }
 
-type ethrMode uint32
+type thunMode uint32
 
 const (
-	ethrModeInv ethrMode = iota
+	thunModeInv thunMode = iota
 
-	ethrModeServer
+	thunModeServer
 
-	ethrModeClient
+	thunModeClient
+
+	thunModeExtClient
 )
 
 var gSessions = make(map[string]*thunSession)
@@ -231,7 +249,7 @@ func newTestInternal(remoteAddr string, conn net.Conn, testParam ThunTestParam, 
 	test.refCount = 0
 	test.enc = enc
 	test.dec = dec
-	test.rcvdMsgs = make(chan *EthrMsg)
+	test.rcvdMsgs = make(chan *ThunMsg)
 	test.testParam = testParam
 	test.done = make(chan struct{})
 	test.connList = list.New()
@@ -258,23 +276,23 @@ func getTestInternal(remoteAddr string, proto ThunProtocol, testType ThunTestTyp
 func watchControlChannel(test *thunTest, waitForChannelStop chan bool) {
 	go func() {
 		for {
-			ethrMsg := recvSessionMsg(test.dec)
-			if ethrMsg.Type == EthrInv {
+			thunMsg := recvSessionMsg(test.dec)
+			if thunMsg.Type == ThunInv {
 				break
 			}
-			test.rcvdMsgs <- ethrMsg
-			ui.printDbg("%v", ethrMsg)
+			test.rcvdMsgs <- thunMsg
+			ui.printDbg("%v", thunMsg)
 		}
 		waitForChannelStop <- true
 	}()
 }
 
-func recvSessionMsg(dec *gob.Decoder) (ethrMsg *EthrMsg) {
-	ethrMsg = &EthrMsg{}
-	err := dec.Decode(ethrMsg)
+func recvSessionMsg(dec *gob.Decoder) (thunMsg *ThunMsg) {
+	thunMsg = &ThunMsg{}
+	err := dec.Decode(thunMsg)
 	if err != nil {
 		ui.printDbg("Error receiving message on control channel: %v", err)
-		ethrMsg.Type = EthrInv
+		thunMsg.Type = ThunInv
 	}
 	return
 }
@@ -348,33 +366,33 @@ func getFd(conn net.Conn) uintptr {
 	return fd
 }
 
-func sendSessionMsg(enc *gob.Encoder, ethrMsg *EthrMsg) error {
-	err := enc.Encode(ethrMsg)
+func sendSessionMsg(enc *gob.Encoder, thunMsg *ThunMsg) error {
+	err := enc.Encode(thunMsg)
 	if err != nil {
-		ui.printDbg("Error sending message on control channel. Message: %v, Error: %v", ethrMsg, err)
+		ui.printDbg("Error sending message on control channel. Message: %v, Error: %v", thunMsg, err)
 	}
 	return err
 }
 
-func createAckMsg(cert []byte, d time.Duration) (ethrMsg *EthrMsg) {
-	ethrMsg = &EthrMsg{Version: 0, Type: EthrAck}
-	ethrMsg.Ack = &EthrMsgAck{}
-	ethrMsg.Ack.Cert = cert
-	ethrMsg.Ack.NapDuration = d
+func createAckMsg(cert []byte, d time.Duration) (thunMsg *ThunMsg) {
+	thunMsg = &ThunMsg{Version: 0, Type: ThunAck}
+	thunMsg.Ack = &ThunMsgAck{}
+	thunMsg.Ack.Cert = cert
+	thunMsg.Ack.NapDuration = d
 	return
 }
 
-func createFinMsg(message string) (ethrMsg *EthrMsg) {
-	ethrMsg = &EthrMsg{Version: 0, Type: EthrFin}
-	ethrMsg.Fin = &EthrMsgFin{}
-	ethrMsg.Fin.Message = message
+func createFinMsg(message string) (thunMsg *ThunMsg) {
+	thunMsg = &ThunMsg{Version: 0, Type: ThunFin}
+	thunMsg.Fin = &ThunMsgFin{}
+	thunMsg.Fin.Message = message
 	return
 }
 
-func createSynMsg(testParam ThunTestParam) (ethrMsg *EthrMsg) {
-	ethrMsg = &EthrMsg{Version: 0, Type: EthrSyn}
-	ethrMsg.Syn = &EthrMsgSyn{}
-	ethrMsg.Syn.TestParam = testParam
+func createSynMsg(testParam ThunTestParam) (thunMsg *ThunMsg) {
+	thunMsg = &ThunMsg{Version: 0, Type: ThunSyn}
+	thunMsg.Syn = &ThunMsgSyn{}
+	thunMsg.Syn.TestParam = testParam
 	return
 }
 

@@ -38,7 +38,7 @@ func PrintPortUsage() {
 		"Key specifies the protocol, and value specifies base port.",
 		"Ports used for various tests are calculated from base port.",
 		"Example: For TCP, Bw: 9999, CPS: 9998, PPS: 9997, Latency: 9996",
-		"Control is used for control channel communication for ethr.",
+		"Control is used for control channel communication for thun.",
 		"Note: Same configuration must be used on both client & server.",
 		"Default: 'control=8888,tcp=9999,udp=9999,http=9899,https=9799'")
 }
@@ -127,11 +127,11 @@ func PrintNoConnStatUsage() {
 func PrintIgnoreCertUsage() {
 	PrintFlagUsage("ic", "",
 		"Ignore Certificate is useful for HTTPS tests, for cases where a",
-		"middle box like a proxy is not able to supply a valid Ethr cert.")
+		"middle box like a proxy is not able to supply a valid thun cert.")
 }
 
 func PrintUsageError(s string) {
 	fmt.Printf("Error: %s\n", s)
-	fmt.Printf("Please use \"ethr -h\" for ethr command line arguments.\n")
+	fmt.Printf("Please use \"thun -h\" for thun command line arguments.\n")
 	os.Exit(1)
 }

@@ -23,7 +23,7 @@ var (
 	proc_get_if_entry2         = iphlpapi.NewProc("GetIfEntry2")
 )
 
-type winEthrNetDevInfo struct {
+type winthunNetDevInfo struct {
 	bytes   uint64
 	packets uint64
 	drop    uint64
@@ -32,13 +32,13 @@ type winEthrNetDevInfo struct {
 
 type osStats struct{}
 
-func (s osStats) GetNetDevStats() ([]EthrNetDevStat, error) {
+func (s osStats) GetNetDevStats() ([]thunNetDevStat, error) {
 	ifs, err := net.Interfaces()
 	if err != nil {
 		return nil, errors.Wrap(err, "GetNetDevStats: error getting network interfaces")
 	}
 
-	var res []EthrNetDevStat
+	var res []thunNetDevStat
 
 	for _, ifi := range ifs {
 		if (ifi.Flags&net.FlagUp) == 0 || strings.Contains(ifi.Name, "Pseudo") {
@@ -48,19 +48,19 @@ func (s osStats) GetNetDevStats() ([]EthrNetDevStat, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "GetNetDevStats:")
 		}
-		rxInfo := winEthrNetDevInfo{
+		rxInfo := winthunNetDevInfo{
 			bytes:   uint64(row.InOctets),
 			packets: uint64(row.InUcastPkts),
 			drop:    uint64(row.InDiscards),
 			errs:    uint64(row.InErrors),
 		}
-		txInfo := winEthrNetDevInfo{
+		txInfo := winthunNetDevInfo{
 			bytes:   uint64(row.OutOctets),
 			packets: uint64(row.OutUcastPkts),
 			drop:    uint64(row.OutDiscards),
 			errs:    uint64(row.OutErrors),
 		}
-		netStats := EthrNetDevStat{
+		netStats := thunNetDevStat{
 			InterfaceName: ifi.Name,
 			RxBytes:       rxInfo.bytes,
 			TxBytes:       txInfo.bytes,
@@ -95,16 +95,16 @@ const (
 	afInet6 = 23
 )
 
-func (s osStats) GetTCPStats() (EthrTCPStat, error) {
+func (s osStats) GetTCPStats() (thunTCPStat, error) {
 	tcpStats := &mibTCPStats{}
 	r0, _, _ := syscall.Syscall(proc_get_tcp_statistics_ex.Addr(), 2,
 		uintptr(unsafe.Pointer(tcpStats)), uintptr(afInet), 0)
 
 	if r0 != 0 {
 		errcode := syscall.Errno(r0)
-		return EthrTCPStat{}, errcode
+		return thunTCPStat{}, errcode
 	}
-	return EthrTCPStat{uint64(tcpStats.DwRetransSegs)}, nil
+	return thunTCPStat{uint64(tcpStats.DwRetransSegs)}, nil
 }
 
 type guid struct {

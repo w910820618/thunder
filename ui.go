@@ -212,7 +212,7 @@ func printDivider2() {
 	ui.printMsg("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
 }
 
-type ethrUI interface {
+type thunUI interface {
 	fini()
 	printMsg(format string, a ...interface{})
 	printErr(format string, a ...interface{})
@@ -225,7 +225,7 @@ type ethrUI interface {
 	emitTestResult(*thunSession, ThunProtocol, uint64)
 	printTestResults([]string)
 	emitTestResultEnd()
-	emitStats(stats.EthrNetStats)
+	emitStats(stats.ThunNetStats)
 }
 
-var ui ethrUI
+var ui thunUI

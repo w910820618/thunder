@@ -6,11 +6,11 @@
 package stats
 
 type OSStats interface {
-	GetNetDevStats() ([]EthrNetDevStat, error)
-	GetTCPStats() (EthrTCPStat, error)
+	GetNetDevStats() ([]ThunNetDevStat, error)
+	GetTCPStats() (thunTCPStat, error)
 }
 
-// GetOSStats returns Ethr-relevant OS statistics, dependant on the build flag
+// GetOSStats returns thun-relevant OS statistics, dependant on the build flag
 func GetOSStats() OSStats {
 	return osStats{}
 }

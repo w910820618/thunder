@@ -1,16 +1,11 @@
-//-----------------------------------------------------------------------------
-// Copyright (C) Microsoft. All rights reserved.
-// Licensed under the MIT license.
-// See LICENSE.txt file in the project root for full license information.
-//-----------------------------------------------------------------------------
 package stats
 
-type EthrNetStats struct {
-	NetDevStats []EthrNetDevStat
-	TCPStats    EthrTCPStat
+type ThunNetStats struct {
+	NetDevStats []ThunNetDevStat
+	TCPStats    thunTCPStat
 }
 
-type EthrNetDevStat struct {
+type ThunNetDevStat struct {
 	InterfaceName string
 	RxBytes       uint64
 	TxBytes       uint64
@@ -18,6 +13,6 @@ type EthrNetDevStat struct {
 	TxPkts        uint64
 }
 
-type EthrTCPStat struct {
+type thunTCPStat struct {
 	SegRetrans uint64
 }

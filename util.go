@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,15 +15,54 @@ var customPortRegex = regexp.MustCompile("(\\w+)=([0-9]+)")
 
 const hostAddr = ""
 
-var udpPpsPort, ctrlPort, udpBandwidthPort string
+var ctrlPort string
+var tcpBandwidthPort, tcpCpsPort, tcpPpsPort, tcpLatencyPort string
+var udpBandwidthPort, udpCpsPort, udpPpsPort, udpLatencyPort string
+var httpBandwidthPort, httpCpsPort, httpPpsPort, httpLatencyPort string
+var httpsBandwidthPort, httpsCpsPort, httpsPpsPort, httpsLatencyPort string
 
 var ctrlBasePort = 8888
 var udpBasePort = 9999
+var tcpBasePort = 9999
+var httpBasePort = 9899
+var httpsBasePort = 9799
 
 func generatePortNumbers(customPortString string) {
+	portsStr := strings.ToUpper(customPortString)
+	data := customPortRegex.FindAllStringSubmatch(portsStr, -1)
+	for _, kv := range data {
+		k := kv[1]
+		v := kv[2]
+		p := toInt(v)
+		if p == 0 {
+			continue
+		}
+		switch k {
+		case "TCP":
+			tcpBasePort = p
+		case "UDP":
+			udpBasePort = p
+		case "HTTP":
+			httpBasePort = p
+		case "HTTPS":
+			httpsBasePort = p
+		case "CONTROL":
+			ctrlBasePort = p
+		default:
+			ui.printErr("Ignoring unexpected key in custom ports: %s", k)
+		}
+	}
 	ctrlPort = toString(ctrlBasePort)
 	udpPpsPort = customPortString
 	udpBandwidthPort = toString(udpBasePort)
+	httpBandwidthPort = toString(httpBasePort)
+	httpCpsPort = toString(httpBasePort - 1)
+	httpPpsPort = toString(httpBasePort - 2)
+	httpLatencyPort = toString(httpBasePort - 3)
+	httpsBandwidthPort = toString(httpsBasePort)
+	httpsCpsPort = toString(httpsBasePort - 1)
+	httpsPpsPort = toString(httpsBasePort - 2)
+	httpsLatencyPort = toString(httpsBasePort - 3)
 }
 
 const (
@@ -178,10 +218,15 @@ func toInt(s string) int {
 	return res
 }
 
-func ethrUnused(vals ...interface{}) {
+func thunUnused(vals ...interface{}) {
 	for _, val := range vals {
 		_ = val
 	}
+}
+
+func cpsToString(cps uint64) string {
+	result := numberToUnit(cps)
+	return result
 }
 
 func bytesToRate(bytes uint64) string {
@@ -217,4 +262,8 @@ func numberToUnit(num uint64) string {
 	result := strconv.FormatFloat(value, 'f', 2, 64)
 	result = strings.TrimSuffix(result, ".00")
 	return result + unit
+}
+
+type tcpKeepAliveListener struct {
+	*net.TCPListener
 }
