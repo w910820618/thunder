@@ -11,13 +11,13 @@ func main() {
 	Get data from the command line   add ip port
 	*/
 	isServer := flag.Bool("s", false, "")
-	hostAddrStr := flag.String("h", "127.0.0.1", "")
 	clientDest := flag.String("c", "", "")
 	//testTypePtr := flag.String("t", "", "")
 	thCount := flag.Int("n", 1, "")
 	showUI := flag.Bool("ui", false, "")
 	duration := flag.Duration("d", 10*time.Second, "")
-	bufLenStr := flag.String("len", "512B", "")
+	bufLenStr := flag.String("len", "16KB", "")
+	portStr := flag.String("ports", "", "")
 	flag.Parse()
 
 	mode := ethrModeInv
@@ -66,9 +66,7 @@ func main() {
 		*thCount = runtime.NumCPU()
 	}
 
-	runtime.GOMAXPROCS(*thCount)
-
-	generateAddr(*hostAddrStr)
+	generatePortNumbers(*portStr)
 	testParam := ThunTestParam{ThunTestID{ThunProtocol(UDP), testType},
 		uint32(bufLen),
 		uint32(*thCount)}

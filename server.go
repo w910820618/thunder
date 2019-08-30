@@ -110,7 +110,7 @@ func finiServer() {
 }
 
 func runUDPServer(test *thunTest) error {
-	udpAddr, err := net.ResolveUDPAddr("udp", hostAddr+":"+udpPort)
+	udpAddr, err := net.ResolveUDPAddr("udp", hostAddr+":"+udpBandwidthPort)
 	if err != nil {
 		ui.printDbg("Unable to resolve UDP address: %v", err)
 		return err

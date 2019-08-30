@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"net"
-	"runtime"
 	"sync/atomic"
 	"time"
 )
@@ -106,40 +105,41 @@ func runTest(test *thunTest, d time.Duration) {
 
 func runUDPTest(test *thunTest) {
 	server := test.session.remoteAddr
-
-	runtime.LockOSThread()
-	buff := make([]byte, test.testParam.BufferSize)
-	conn, err := net.Dial("udp", server+":"+udpPort)
-	if err != nil {
-		ui.printDbg("Unable to dial UDP, error: %v", err)
-		return
-	}
-	defer conn.Close()
-	ec := test.newConn(conn)
-	rserver, rport, _ := net.SplitHostPort(conn.RemoteAddr().String())
-	lserver, lport, _ := net.SplitHostPort(conn.LocalAddr().String())
-	ui.printMsg("[%3d] local %s port %s connected to %s port %s",
-		ec.fd, lserver, lport, rserver, rport)
-	blen := len(buff)
-ExitForLoop:
-	for {
-		select {
-		case <-test.done:
-			break ExitForLoop
-		default:
-			n, err := conn.Write(buff)
+	for th := uint32(0); th < test.testParam.NumThreads; th++ {
+		go func() {
+			buff := make([]byte, test.testParam.BufferSize)
+			conn, err := net.Dial("udp", server+":"+udpBandwidthPort)
 			if err != nil {
-				ui.printDbg("%v", err)
-				continue
+				ui.printDbg("Unable to dial UDP, error: %v", err)
+				return
 			}
-			if n < blen {
-				ui.printDbg("Partial write: %d", n)
-				continue
+			defer conn.Close()
+			ec := test.newConn(conn)
+			rserver, rport, _ := net.SplitHostPort(conn.RemoteAddr().String())
+			lserver, lport, _ := net.SplitHostPort(conn.LocalAddr().String())
+			ui.printMsg("[%3d] local %s port %s connected to %s port %s",
+				ec.fd, lserver, lport, rserver, rport)
+			blen := len(buff)
+		ExitForLoop:
+			for {
+				select {
+				case <-test.done:
+					break ExitForLoop
+				default:
+					n, err := conn.Write(buff)
+					if err != nil {
+						ui.printDbg("%v", err)
+						continue
+					}
+					if n < blen {
+						ui.printDbg("Partial write: %d", n)
+						continue
+					}
+					atomic.AddUint64(&ec.data, uint64(n))
+					atomic.AddUint64(&test.testResult.bpsdata, uint64(n))
+					atomic.AddUint64(&test.testResult.ppsdata, 1)
+				}
 			}
-			atomic.AddUint64(&ec.data, uint64(n))
-			atomic.AddUint64(&test.testResult.bpsdata, uint64(n))
-			atomic.AddUint64(&test.testResult.ppsdata, 1)
-		}
+		}()
 	}
-
 }
