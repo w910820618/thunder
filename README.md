@@ -7,8 +7,7 @@
 设置参数 为 18线程、发送64B长度的UDP数据包。
 
 客户端发包测试结果为：
-
-![1567492469993](C:\Users\a9108\AppData\Roaming\Typora\typora-user-images\1567492469993.png)
+![image](https://github.com/w910820618/picture_repo/blob/master/1567492469993.png)
 
 ## 安装及使用说明
 
@@ -26,9 +25,9 @@ chmod 777 ./client
 
 - 服务端
 
-   ```
+```
 ./client -s -h 127.0.0.1
-   ```
+```
 
  -s 是否启动服务端，默认为false
 
