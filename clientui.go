@@ -58,7 +58,7 @@ func (u *clientUI) emitLatencyResults(remote, proto string, avg, min, max, p50, 
 func (u *clientUI) emitTestResultEnd() {
 }
 
-func (u *clientUI) emitStats(netStats stats.EthrNetStats) {
+func (u *clientUI) emitStats(netStats stats.ThunNetStats) {
 }
 
 func (u *clientUI) printTestResults(s []string) {

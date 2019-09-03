@@ -5,12 +5,12 @@
 //-----------------------------------------------------------------------------
 package stats
 
-type EthrNetStats struct {
-	NetDevStats []EthrNetDevStat
-	TCPStats    EthrTCPStat
+type ThunNetStats struct {
+	NetDevStats []ThunNetDevStat
+	TCPStats    ThunTCPStat
 }
 
-type EthrNetDevStat struct {
+type ThunNetDevStat struct {
 	InterfaceName string
 	RxBytes       uint64
 	TxBytes       uint64
@@ -18,6 +18,6 @@ type EthrNetDevStat struct {
 	TxPkts        uint64
 }
 
-type EthrTCPStat struct {
+type ThunTCPStat struct {
 	SegRetrans uint64
 }

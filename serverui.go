@@ -13,22 +13,22 @@ import (
 	"thunder/internal/stats"
 )
 
-type ethrTestResultAggregate struct {
+type thunTestResultAggregate struct {
 	bw, cps, pps    uint64
 	cbw, ccps, cpps uint64
 }
 
-var gAggregateTestResults = make(map[ThunProtocol]*ethrTestResultAggregate)
+var gAggregateTestResults = make(map[ThunProtocol]*thunTestResultAggregate)
 
 //
 // Initialization functions.
 //
 func initServerUI(showUI bool) {
-	gAggregateTestResults[TCP] = &ethrTestResultAggregate{}
-	gAggregateTestResults[UDP] = &ethrTestResultAggregate{}
-	gAggregateTestResults[HTTP] = &ethrTestResultAggregate{}
-	gAggregateTestResults[HTTPS] = &ethrTestResultAggregate{}
-	gAggregateTestResults[ICMP] = &ethrTestResultAggregate{}
+	gAggregateTestResults[TCP] = &thunTestResultAggregate{}
+	gAggregateTestResults[UDP] = &thunTestResultAggregate{}
+	gAggregateTestResults[HTTP] = &thunTestResultAggregate{}
+	gAggregateTestResults[HTTPS] = &thunTestResultAggregate{}
+	gAggregateTestResults[ICMP] = &thunTestResultAggregate{}
 	if !showUI || !initServerTui() {
 		initServerCli()
 	}
@@ -210,7 +210,7 @@ func (u *serverTui) emitLatencyResults(remote, proto string, avg, min, max, p50,
 func (u *serverTui) paint(seconds uint64) {
 	tm.Clear(tm.ColorDefault, tm.ColorDefault)
 	defer tm.Flush()
-	printCenterText(0, 0, u.w, "Ethr ", tm.ColorBlack, tm.ColorWhite)
+	printCenterText(0, 0, u.w, "Thun ", tm.ColorBlack, tm.ColorWhite)
 	printHLineText(u.resX, u.resY-1, u.resW, "Test Results")
 	printHLineText(u.statX, u.statY-1, u.statW, "Statistics")
 	printVLine(u.topVSplitX, u.topVSplitY, u.topVSplitH)
@@ -278,10 +278,10 @@ func (u *serverTui) paint(seconds uint64) {
 		tm.ColorDefault, tm.ColorDefault)
 }
 
-var gPrevNetStats stats.EthrNetStats
-var gCurNetStats stats.EthrNetStats
+var gPrevNetStats stats.ThunNetStats
+var gCurNetStats stats.ThunNetStats
 
-func (u *serverTui) emitStats(netStats stats.EthrNetStats) {
+func (u *serverTui) emitStats(netStats stats.ThunNetStats) {
 	gPrevNetStats = gCurNetStats
 	gCurNetStats = netStats
 }
@@ -356,7 +356,7 @@ func (u *serverCli) emitLatencyResults(remote, proto string, avg, min, max, p50,
 	logLatency(remote, proto, avg, min, max, p50, p90, p95, p99, p999, p9999)
 }
 
-func (u *serverCli) emitStats(netStats stats.EthrNetStats) {
+func (u *serverCli) emitStats(netStats stats.ThunNetStats) {
 }
 
 func (u *serverCli) printTestResults(s []string) {

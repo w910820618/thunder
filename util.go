@@ -178,7 +178,7 @@ func toInt(s string) int {
 	return res
 }
 
-func ethrUnused(vals ...interface{}) {
+func thunUnused(vals ...interface{}) {
 	for _, val := range vals {
 		_ = val
 	}

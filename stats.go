@@ -6,25 +6,7 @@ import (
 	"thunder/internal/stats"
 )
 
-//func getNetworkStats() (stats.EthrNetStats, error) {
-//	osStats := stats.GetOSStats()
-//	devStats, err := osStats.GetNetDevStats()
-//	if err != nil {
-//		return stats.EthrNetStats{}, errors.Wrap(err, "getNetworkStats: could not get net device stats")
-//	}
-//	sort.SliceStable(devStats, func(i, j int) bool {
-//		return devStats[i].InterfaceName < devStats[j].InterfaceName
-//	})
-//
-//	tcpStats, err := osStats.GetTCPStats()
-//	if err != nil {
-//		return stats.EthrNetStats{}, errors.Wrap(err, "getNetworkStats: could not get net TCP stats")
-//	}
-//
-//	return stats.EthrNetStats{NetDevStats: devStats, TCPStats: tcpStats}, nil
-//}
-
-func getNetDevStatDiff(curStats stats.EthrNetDevStat, prevNetStats stats.EthrNetStats, seconds uint64) stats.EthrNetDevStat {
+func getNetDevStatDiff(curStats stats.ThunNetDevStat, prevNetStats stats.ThunNetStats, seconds uint64) stats.ThunNetDevStat {
 	for _, prevStats := range prevNetStats.NetDevStats {
 		if prevStats.InterfaceName != curStats.InterfaceName {
 			continue
@@ -104,11 +86,6 @@ func emitStats() {
 	ui.emitTestResultBegin()
 	emitTestResults(uint64(seconds))
 	ui.emitTestResultEnd()
-	//stats, err := getNetworkStats()
-	//if err != nil {
-	//	ui.printErr("could not get network stats")
-	//}
-	//ui.emitStats(stats)
 	ui.paint(uint64(seconds))
 }
 

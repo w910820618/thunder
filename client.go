@@ -75,8 +75,8 @@ func establishSession(testParam ThunTestParam, server string) (test *thunTest, e
 	}()
 	dec := gob.NewDecoder(conn)
 	enc := gob.NewEncoder(conn)
-	ethrMsg := createSynMsg(testParam)
-	err = sendSessionMsg(enc, ethrMsg)
+	thunMsg := createSynMsg(testParam)
+	err = sendSessionMsg(enc, thunMsg)
 	if err != nil {
 		return
 	}
@@ -84,28 +84,28 @@ func establishSession(testParam ThunTestParam, server string) (test *thunTest, e
 	server = "[" + rserver + "]"
 	test, err = newTest(server, conn, testParam, enc, dec)
 	if err != nil {
-		ethrMsg = createFinMsg(err.Error())
-		sendSessionMsg(enc, ethrMsg)
+		thunMsg = createFinMsg(err.Error())
+		sendSessionMsg(enc, thunMsg)
 		return
 	}
-	ethrMsg = recvSessionMsg(test.dec)
-	if ethrMsg.Type != EthrAck {
-		if ethrMsg.Type == EthrFin {
-			err = fmt.Errorf("%s", ethrMsg.Fin.Message)
+	thunMsg = recvSessionMsg(test.dec)
+	if thunMsg.Type != ThunAck {
+		if thunMsg.Type == ThunFin {
+			err = fmt.Errorf("%s", thunMsg.Fin.Message)
 		} else {
-			err = fmt.Errorf("Unexpected control message received. %v", ethrMsg)
+			err = fmt.Errorf("Unexpected control message received. %v", thunMsg)
 		}
 		deleteTest(test)
 		return nil, err
 	}
-	gCert = ethrMsg.Ack.Cert
-	napDuration := ethrMsg.Ack.NapDuration
+	gCert = thunMsg.Ack.Cert
+	napDuration := thunMsg.Ack.NapDuration
 	time.Sleep(napDuration)
 	// TODO: Enable this in future, right now there is not much value coming
 	// from this.
 	/**
-		ethrMsg = createAckMsg()
-		err = sendSessionMsg(test.enc, ethrMsg)
+		thunMsg = createAckMsg()
+		err = sendSessionMsg(test.enc, thunMsg)
 		if err != nil {
 			os.Exit(1)
 		}
@@ -123,16 +123,16 @@ func runTest(test *thunTest, d time.Duration) {
 	handleCtrlC(toStop)
 	reason := <-toStop
 	close(test.done)
-	sendSessionMsg(test.enc, &EthrMsg{})
+	sendSessionMsg(test.enc, &ThunMsg{})
 	test.ctrlConn.Close()
 	stopStatsTimer()
 	switch reason {
 	case timeout:
-		fmt.Printf("Ethr done, duration: " + d.String() + ".")
+		fmt.Printf("Thun done, duration: " + d.String() + ".")
 	case interrupt:
-		ui.printMsg("Ethr done, received interrupt signal.")
+		ui.printMsg("Thun done, received interrupt signal.")
 	case serverDone:
-		ui.printMsg("Ethr done, server terminated the session.")
+		ui.printMsg("Thun done, server terminated the session.")
 	}
 }
 

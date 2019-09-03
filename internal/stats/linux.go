@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type linuxEthrNetDevInfo struct {
+type linuxThunNetDevInfo struct {
 	bytes      uint64
 	packets    uint64
 	drop       uint64
@@ -31,7 +31,7 @@ type linuxEthrNetDevInfo struct {
 type osStats struct {
 }
 
-func (s osStats) GetNetDevStats() ([]EthrNetDevStat, error) {
+func (s osStats) GetNetDevStats() ([]ThunNetDevStat, error) {
 	ifs, err := net.Interfaces()
 	if err != nil {
 		return nil, errors.Wrap(err, "GetNetDevStats: error getting network interfaces")
@@ -55,7 +55,7 @@ func (s osStats) GetNetDevStats() ([]EthrNetDevStat, error) {
 	if line == "" {
 		return nil, nil // TODO: possibly return an error here
 	}
-	var res []EthrNetDevStat
+	var res []ThunNetDevStat
 
 	netDevStat, err := buildNetDevStat(line)
 	if err != nil {
@@ -72,21 +72,21 @@ func (s osStats) GetNetDevStats() ([]EthrNetDevStat, error) {
 	return res, nil
 }
 
-func buildNetDevStat(line string) (EthrNetDevStat, error) {
+func buildNetDevStat(line string) (ThunNetDevStat, error) {
 	fields := strings.Fields(line)
 	interfaceName := strings.TrimSuffix(fields[0], ":")
 
 	rxInfo, err := toNetDevInfo(fields[1:9])
 	if err != nil {
-		return EthrNetDevStat{}, errors.Wrap(err, "buildNetDevStat: error parsing rxInfo")
+		return ThunNetDevStat{}, errors.Wrap(err, "buildNetDevStat: error parsing rxInfo")
 	}
 
 	txInfo, err := toNetDevInfo(fields[9:17])
 	if err != nil {
-		return EthrNetDevStat{}, errors.Wrap(err, "buildNetDevStat: error parsing txInfo")
+		return ThunNetDevStat{}, errors.Wrap(err, "buildNetDevStat: error parsing txInfo")
 	}
 
-	return EthrNetDevStat{
+	return ThunNetDevStat{
 		InterfaceName: interfaceName,
 		RxBytes:       rxInfo.bytes,
 		TxBytes:       txInfo.bytes,
@@ -95,19 +95,19 @@ func buildNetDevStat(line string) (EthrNetDevStat, error) {
 	}, nil
 }
 
-func toNetDevInfo(fields []string) (linuxEthrNetDevInfo, error) {
+func toNetDevInfo(fields []string) (linuxThunNetDevInfo, error) {
 	var err error
 
 	intFields := [8]uint64{}
 	for i := 0; i < 8; i++ {
 		intFields[i], err = strconv.ParseUint(fields[i], 10, 64)
 		if err != nil {
-			return linuxEthrNetDevInfo{}, errors.Wrap(err,
+			return linuxThunNetDevInfo{}, errors.Wrap(err,
 				"toNetDevInfo: error in string conversion")
 		}
 	}
 
-	return linuxEthrNetDevInfo{
+	return linuxThunNetDevInfo{
 		bytes:      intFields[0],
 		packets:    intFields[1],
 		errs:       intFields[2],
@@ -131,10 +131,10 @@ func isIfUp(ifName string, ifs []net.Interface) bool {
 	return false
 }
 
-func (s osStats) GetTCPStats() (EthrTCPStat, error) {
+func (s osStats) GetTCPStats() (ThunTCPStat, error) {
 	snmpStatsFile, err := os.Open("/proc/net/snmp")
 	if err != nil {
-		return EthrTCPStat{}, errors.Wrap(err, "GetTCPStats: error opening /proc/net/snmp")
+		return ThunTCPStat{}, errors.Wrap(err, "GetTCPStats: error opening /proc/net/snmp")
 	}
 	defer snmpStatsFile.Close()
 
@@ -144,25 +144,25 @@ func (s osStats) GetTCPStats() (EthrTCPStat, error) {
 	//      CurrEstab InSegs OutSegs RetransSegs InErrs OutRsts InCsumErrors
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		return EthrTCPStat{}, errors.Wrap(err, "GetTCPStats: error reading from /proc/net/snmp")
+		return ThunTCPStat{}, errors.Wrap(err, "GetTCPStats: error reading from /proc/net/snmp")
 	}
 	if line == "" || !strings.HasPrefix(line, "Tcp") {
-		return EthrTCPStat{}, errors.New("GetTCPStats: could not find a TCP info")
+		return ThunTCPStat{}, errors.New("GetTCPStats: could not find a TCP info")
 	}
 
 	// Skip the first line starting with Tcp
 	line, err = reader.ReadString('\n')
 	if err != nil {
-		return EthrTCPStat{}, errors.Wrap(err, "GetTCPStats: error reading from /proc/net/snmp")
+		return ThunTCPStat{}, errors.Wrap(err, "GetTCPStats: error reading from /proc/net/snmp")
 	}
 	if !strings.HasPrefix(line, "Tcp") {
-		return EthrTCPStat{}, errors.New("GetTCPStats: could not find TCP info")
+		return ThunTCPStat{}, errors.New("GetTCPStats: could not find TCP info")
 	}
 
 	fields := strings.Fields(line)
 	intField, err := strconv.ParseUint(fields[12], 10, 64)
 	if err != nil {
-		return EthrTCPStat{}, errors.Wrap(err, "GetTCPStats: could not convert field data to integer")
+		return ThunTCPStat{}, errors.Wrap(err, "GetTCPStats: could not convert field data to integer")
 	}
-	return EthrTCPStat{intField}, nil
+	return ThunTCPStat{intField}, nil
 }

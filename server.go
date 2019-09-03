@@ -12,7 +12,7 @@ import (
 
 var gCert []byte
 
-func runServer(testParam ThunTestParam, serverParam ethrServerParam) {
+func runServer(testParam ThunTestParam, serverParam thunServerParam) {
 	defer stopStatsTimer()
 	initServer(serverParam.showUI)
 	l := runControlChannel()
@@ -47,11 +47,11 @@ func handleRequest(conn net.Conn) {
 	defer conn.Close()
 	dec := gob.NewDecoder(conn)
 	enc := gob.NewEncoder(conn)
-	ethrMsg := recvSessionMsg(dec)
-	if ethrMsg.Type != EthrSyn {
+	thunMsg := recvSessionMsg(dec)
+	if thunMsg.Type != ThunSyn {
 		return
 	}
-	testParam := ethrMsg.Syn.TestParam
+	testParam := thunMsg.Syn.TestParam
 	server, port, err := net.SplitHostPort(conn.RemoteAddr().String())
 	if err != nil {
 		ui.printDbg("RemoteAddr: Split host port failed: %v", err)
@@ -70,8 +70,8 @@ func handleRequest(conn net.Conn) {
 		msg := "Rejected duplicate " + protoToString(testParam.TestID.Protocol) + " " +
 			testToString(testParam.TestID.Type) + " test from " + server
 		ui.printMsg(msg)
-		ethrMsg = createFinMsg(msg)
-		sendSessionMsg(enc, ethrMsg)
+		thunMsg = createFinMsg(msg)
+		sendSessionMsg(enc, thunMsg)
 		return
 	}
 	cleanupFunc := func() {
@@ -90,8 +90,8 @@ func handleRequest(conn net.Conn) {
 		}
 	}
 	delay := timeToNextTick()
-	ethrMsg = createAckMsg(gCert, delay)
-	err = sendSessionMsg(enc, ethrMsg)
+	thunMsg = createAckMsg(gCert, delay)
+	err = sendSessionMsg(enc, thunMsg)
 	if err != nil {
 		ui.printErr("send session message: %v", err)
 		cleanupFunc()
@@ -155,7 +155,7 @@ func runUDPHandler(test *thunTest, conn *net.UDPConn) {
 			ui.printDbg("Error receiving data from UDP for bandwidth test: %v", err)
 			continue
 		}
-		ethrUnused(n)
+		thunUnused(n)
 		server, port, _ := net.SplitHostPort(remoteAddr.String())
 		test := getTest(server, UDP, Bandwidth)
 		if test != nil {
