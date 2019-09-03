@@ -9,7 +9,6 @@ import (
 func main() {
 	isServer := flag.Bool("s", false, "")
 	hostAddrStr := flag.String("h", "127.0.0.1", "")
-	clientDest := flag.String("c", "", "")
 	thCount := flag.Int("n", 1, "")
 	showUI := flag.Bool("ui", false, "")
 	duration := flag.Duration("d", 10*time.Second, "")
@@ -52,6 +51,6 @@ func main() {
 	case thunModeServer:
 		runServer(testParam, serverParam)
 	case thunModeClient:
-		runClient(testParam, clientParam, *clientDest)
+		runClient(testParam, clientParam, *hostAddrStr)
 	}
 }
